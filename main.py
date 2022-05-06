@@ -1,5 +1,5 @@
 import numpy as np
-from RadiationField import QuantumOscillators
+from RadiationField import QuantumOscillators, mpiutil
 import h5py
 #import matplotlib.pyplot as plt
 #from RadiationField.visulization import plots_2d_in_3d, animation_imshow
@@ -14,13 +14,14 @@ c_list_1 = [100,100]
 two_ocsi_sys_1 = QuantumOscillators.Chi_analysis(omega_list, c_list_1, 60000, 1e-16)
 #N_and_Nchi_ts_1, C_chi_1, tlist = two_ocsi_sys_1.Average_N_decomposed_evolution(0,10000,1)
 dm_array, N_averg = two_ocsi_sys_1.density_matrix_evolution(0,10000,1, 'N')
-tlist = np.linspace(0,10000,1)
-with h5py.File("oscillators_1.hdf5", "w") as f:
-    f.create_dataset("t",data=tlist)
-    f.create_dataset("dm_array",data=dm_array)
-    f.create_dataset("N",data=N_averg)
-    f.create_dataset("c",data=c_list_1)
-    f.create_dataset("chimax", data=two_ocsi_sys_1.Chimax)
+if mpiutil.rank0:
+    tlist = np.linspace(0,10000,1)
+    with h5py.File("oscillators_1.hdf5", "w") as f:
+        f.create_dataset("t",data=tlist)
+        f.create_dataset("dm_array",data=dm_array)
+        f.create_dataset("N",data=N_averg)
+        f.create_dataset("c",data=c_list_1)
+        f.create_dataset("chimax", data=two_ocsi_sys_1.Chimax)
 
 """
 n_2N_avg = 2*c_list_1[0]**2 + c_list_1[1]**2
