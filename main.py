@@ -11,7 +11,7 @@ def heavist_chi(c_list):
     return int(2*np.absolute(c_list[0])**2 + np.absolute(c_list[1])**2)
 
 c_list_1 = [30,30]
-two_ocsi_sys_1 = QuantumOscillators.Chi_analysis(omega_list, c_list_1, 2700, 1e-16)
+two_ocsi_sys_1 = QuantumOscillators.Chi_analysis(omega_list, c_list_1, 5400, 1e-16)
 #N_and_Nchi_ts_1, C_chi_1, tlist = two_ocsi_sys_1.Average_N_decomposed_evolution(0,10000,1)
 dm_array, N_averg = two_ocsi_sys_1.density_matrix_evolution(0,1000,1, 'N')
 if mpiutil.rank0:
