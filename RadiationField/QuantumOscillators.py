@@ -64,14 +64,14 @@ class two_osci_basic():
             eig_vals, eig_vecs = scipy.linalg.eigh(A)
             V_H = np.matrix(eig_vecs).getH()
             g_i = np.array(V_H) @ self.init_coeff_lists[Chi]
-            return eig_vals, eig_vecs, g_i, A
+            return eig_vals, eig_vecs, g_i
 
         Chi_array = list(np.arange(self.Chimax + 1))
         Result = mpiutil.parallel_map(solve_Chi_eigen_sys, Chi_array, method="alt")
-        self.eig_vals_lists, self.eig_vecs_lists, self.init_cond_lists, self.transfer_matrices = list(zip(*Result))
-        self.scaled_eig_vals = [self.factor*item for item in self.eig_vals_lists]
-        self.scaled_eig_vecs = [np.einsum("ij,j->ij",self.eig_vecs_lists[i],self.init_cond_lists[i])
-                                for i in range(self.Chimax + 1)]
+        self.eig_vals_lists, self.eig_vecs_lists, self.init_cond_lists = list(zip(*Result))
+        #self.scaled_eig_vals = [self.factor*item for item in self.eig_vals_lists]
+        #self.scaled_eig_vecs = [np.einsum("ij,j->ij",self.eig_vecs_lists[i],self.init_cond_lists[i])
+        #                        for i in range(self.Chimax + 1)]
 
     def coeffs_normalized_t(self, t):
         tt = self.factor * t
@@ -87,7 +87,7 @@ class two_osci_basic():
         return [item/norm for item in coeffs]
 
     def linear_solver_chi_basis(self, Chi: int):
-        basis = np.exp(self.scaled_eig_vals[Chi] * self.t)
+        basis = np.exp(self.factor*self.eig_vals_lists[Chi] * self.t)
         coeffs_chi_Ns_t = np.einsum("ij, j, j -> i", self.eig_vecs_lists[Chi], self.init_cond_lists[Chi], basis)
         coeffs_chi_t = np.linalg.norm(coeffs_chi_Ns_t) ** 2
         Nmax = self.Nmax(Chi)
