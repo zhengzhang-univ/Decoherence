@@ -20,6 +20,7 @@ with h5py.File("oscillators_1.hdf5", "w") as f:
     f.create_dataset("dm_array",data=dm_array)
     f.create_dataset("N",data=N_averg)
     f.create_dataset("c",data=c_list_1)
+    f.create_dataset("chimax", data=two_ocsi_sys_1.Chimax)
 
 """
 n_2N_avg = 2*c_list_1[0]**2 + c_list_1[1]**2
