@@ -1,7 +1,46 @@
 import numpy as np
-from RadiationField import QuantumOsci
+from RadiationField import QuantumOscillators
+import h5py
+import matplotlib.pyplot as plt
+from RadiationField.visulization import plots_2d_in_3d, animation_imshow
+
 
 omega_list = list(np.array([2e6, 1e6],dtype=int))
-c_list = [4,4]
-test_cls = QuantumOsci.two_modes_coupled(omega_list, c_list, 100, 1e-16)
-times = np.arange(400)*.25
+
+def heavist_chi(c_list):
+    return int(2*np.absolute(c_list[0])**2 + np.absolute(c_list[1])**2)
+
+
+#c_list = [5,4]
+#c_list = [3+4j,4]
+#c_list_1 = [0,10]
+c_list_1 = [1,np.sqrt(99)] # <N> starts with 1
+#c_list_2 = [5*np.sqrt(2),0]
+c_list_2 = [np.sqrt(99/2.),1] # <N> starts with 49.5
+c_list_3 = [np.sqrt(100/3),np.sqrt(100/3)] # <N> starts with 33.3
+two_ocsi_sys_1 = QuantumOscillators.Chi_analysis(omega_list, c_list_1, 200, 1e-16)
+two_ocsi_sys_2 = QuantumOscillators.Chi_analysis(omega_list, c_list_2, 200, 1e-16)
+two_ocsi_sys_3 = QuantumOscillators.Chi_analysis(omega_list, c_list_3, 200, 1e-16)
+N_and_Nchi_ts_1, C_chi_1, tlist = two_ocsi_sys_1.Average_N_decomposed_evolution(0,1000,1)
+N_and_Nchi_ts_2, C_chi_2, tlist = two_ocsi_sys_2.Average_N_decomposed_evolution(0,1000,1)
+N_and_Nchi_ts_3, C_chi_3, tlist = two_ocsi_sys_3.Average_N_decomposed_evolution(0,1000,1)
+plt.plot(tlist,N_and_Nchi_ts_1[:,0],label='1')
+plt.plot(tlist,N_and_Nchi_ts_2[:,0],label='2')
+plt.plot(tlist,N_and_Nchi_ts_3[:,0],label='3')
+plt.legend()
+plt.show()
+
+#two_ocsi_sys = QuantumOscillators.Chi_analysis(omega_list, c_list, 200, 1e-16)
+
+plots_2d_in_3d(tlist,C_chi_3) # This tells you a subsystem takes constant proportion during evolution.
+plots_2d_in_3d(tlist,N_and_Nchi_ts_3)
+coefficients_chi_decomposed = two_ocsi_sys_3.coefficients_chi_decomposed_evolution(45, tlist)
+plots_2d_in_3d(tlist,coefficients_chi_decomposed) # This tells you C_{\chi} is constant.
+
+dm_array, N_averg = two_ocsi_sys_3.density_matrix_evolution(0,1000,1, 'N')
+animation_imshow(np.absolute(dm_array))
+
+plt.plot(tlist,N_averg,label='from density matrix')
+plt.plot(tlist,N_and_Nchi_ts_3[:,0],label='from Chi synthesis')
+plt.legend()
+plt.show()

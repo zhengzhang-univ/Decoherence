@@ -51,11 +51,11 @@ class two_modes_coupled():
                 aux += item[1]
             V_H = eig_vects.H
             c_i = V_H  @ self.init_amp_lists[Chi]
-            return np.array(sp.N(eig_vals)), np.array(sp.N(eig_vects)), np.array(sp.N(c_i))
+            return np.array(sp.N(eig_vals)), np.array(sp.N(eig_vects)), np.array(sp.N(c_i)), A
 
         Chi_array = list(np.arange(self.Chimax + 1))
         Result = mpiutil.parallel_map(solve_Chi_eigen_sys, Chi_array, method="alt")
-        self.eig_vals_lists, self.eig_vecs_lists, self.init_cond_lists = list(zip(*Result))
+        self.eig_vals_lists, self.eig_vecs_lists, self.init_cond_lists, self.tranfer_matrices = list(zip(*Result))
 
     def time_evolution(self, t):
         Chi_array = list(np.arange(self.Chimax + 1))
