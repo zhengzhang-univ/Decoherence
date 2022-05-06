@@ -1,0 +1,15 @@
+#!/bin/sh
+
+#SBATCH --nodes=20
+#SBATCH --ntasks-per-node=5 # number of MPI processes
+#SBATCH --cpus-per-task=4 # number of OpenMP processes
+#SBATCH --mem=64000 # memory per node
+#SBATCH --time=48:00:00
+#SBATCH --job-name=decoherence
+
+
+source activate decoherence
+
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+cd /home/zzhang/Decoherence
+srun --mpi=pmi2 python main.py
