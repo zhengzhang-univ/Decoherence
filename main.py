@@ -10,12 +10,12 @@ omega_list = list(np.array([2e6, 1e6],dtype=int))
 def heavist_chi(c_list):
     return int(2*np.absolute(c_list[0])**2 + np.absolute(c_list[1])**2)
 
-c_list_1 = [100,100]
-two_ocsi_sys_1 = QuantumOscillators.Chi_analysis(omega_list, c_list_1, 60000, 1e-16)
+c_list_1 = [10,10]
+two_ocsi_sys_1 = QuantumOscillators.Chi_analysis(omega_list, c_list_1, 600, 1e-16)
 #N_and_Nchi_ts_1, C_chi_1, tlist = two_ocsi_sys_1.Average_N_decomposed_evolution(0,10000,1)
-dm_array, N_averg = two_ocsi_sys_1.density_matrix_evolution(0,10000,1, 'N')
+dm_array, N_averg = two_ocsi_sys_1.density_matrix_evolution(0,1000,1, 'N')
 if mpiutil.rank0:
-    tlist = np.linspace(0,10000,1)
+    tlist = np.linspace(0,1000,1)
     with h5py.File("oscillators_1.hdf5", "w") as f:
         f.create_dataset("t",data=tlist)
         f.create_dataset("dm_array",data=dm_array)
