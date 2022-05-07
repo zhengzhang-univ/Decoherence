@@ -22,6 +22,23 @@ def solve_Chi_eigen_sys(Chi):
     eig_vals, eig_vecs = np.linalg.eigh(A)
     return eig_vals, eig_vecs
 
+def solve_Chi_eigen_sys_2(Chi):
+    Nmax = math.floor(Chi / 2)
+    A = np.zeros((Nmax + 1, Nmax + 1))
+    for i in range(Nmax):
+        A[i, i + 1] = A[i + 1, i] = TransferMatrix_rowN(Chi, i + 1)
+    eig_vals, eig_vecs = np.linalg.eigh(A)
+    with h5py.File("Eigenvalues.hdf5", "w") as f:
+        f.create_dataset(str(Chi), data=eig_vals)
+    with h5py.File("Eigenvectors.hdf5", "w") as f:
+        f.create_dataset(str(Chi), data=eig_vecs)
+    return None
+
+def solve_whole_system_and_save_2(chimax):
+    chi_array = list(np.arange(chimax + 1))
+    mpiutil.parallel_jobs_no_gather(solve_Chi_eigen_sys, chi_array, method="alt")
+    return None
+
 def solve_whole_system_and_save(chimax):
     chi_array = list(np.arange(chimax + 1))
     Result = mpiutil.parallel_map(solve_Chi_eigen_sys, chi_array, method="alt")
