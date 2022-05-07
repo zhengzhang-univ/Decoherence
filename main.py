@@ -3,8 +3,11 @@ from RadiationField import QuantumOscillators, mpiutil
 import h5py
 #import matplotlib.pyplot as plt
 #from RadiationField.visulization import plots_2d_in_3d, animation_imshow
-
+import time
+st = time.time()
 QuantumOscillators.solve_whole_system_and_save(5000)
+et = time.time()
+print("Elapsed time (s): {}".format(et-st))
 
 """
 omega_list = list(np.array([2e6, 1e6],dtype=int))

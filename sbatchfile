@@ -1,8 +1,8 @@
 #!/bin/sh
 
 #SBATCH --nodes=20
-#SBATCH --ntasks-per-node=20 # number of MPI processes
-#SBATCH --cpus-per-task=1 # number of OpenMP processes
+#SBATCH --ntasks-per-node=10 # number of MPI processes
+#SBATCH --cpus-per-task=2 # number of OpenMP processes
 #SBATCH --mem=64000 # memory per node
 #SBATCH --time=48:00:00
 #SBATCH --job-name=decoherence
