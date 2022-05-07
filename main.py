@@ -5,7 +5,7 @@ import h5py
 #from RadiationField.visulization import plots_2d_in_3d, animation_imshow
 import time
 st = time.time()
-QuantumOscillators.solve_whole_system_and_save(1000)
+QuantumOscillators.solve_whole_system_and_save_2(1000)
 et = time.time()
 print("Elapsed time (s): {}".format(et-st))
 
