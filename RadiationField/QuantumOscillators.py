@@ -36,7 +36,7 @@ def solve_Chi_eigen_sys_2(Chi):
 
 def solve_whole_system_and_save_2(chimax):
     chi_array = list(np.arange(chimax + 1))
-    mpiutil.parallel_jobs_no_gather(solve_Chi_eigen_sys, chi_array, method="alt")
+    mpiutil.parallel_jobs_no_gather(solve_Chi_eigen_sys_2, chi_array, method="alt")
     return None
 
 def solve_whole_system_and_save(chimax):
