@@ -30,7 +30,7 @@ def solve_whole_system_and_save(chimax):
         with h5py.File("EigenDecomposition.hdf5","w") as f:
             f.create_dataset("Eigenvalues", data=eig_vals_list, chunks=True)
             f.create_dataset("Eigenvectors", data=eig_vecs_list, chunks=True)
-    pass
+    return
 
 class two_osci_basic():
     def __init__(self, omega_list, c_list, Chimax, Lambda):

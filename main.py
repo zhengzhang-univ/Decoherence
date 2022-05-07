@@ -4,7 +4,7 @@ import h5py
 #import matplotlib.pyplot as plt
 #from RadiationField.visulization import plots_2d_in_3d, animation_imshow
 
-QuantumOscillators.solve_whole_system_and_save()
+QuantumOscillators.solve_whole_system_and_save(10000)
 
 """
 omega_list = list(np.array([2e6, 1e6],dtype=int))
