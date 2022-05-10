@@ -23,6 +23,22 @@ def solve_Chi_eigen_sys(Chi):
     return eig_vals, eig_vecs
 
 
+def solve_whole_system_and_save_3(chimax):
+    rank=mpiutil.rank
+    size=mpiutil.size
+    nbatch = math.floor(chimax/size)
+    mpiutil.barrier()
+    for i in range(nbatch+1):
+        chi: int = rank + size * i
+        eigvals, eigvecs = solve_Chi_eigen_sys(chi)
+        f1 = h5py.File('eigenvalues.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
+        f1.create_dataset(str(chi), data=eigvals)
+        f1.close()
+        f2 = h5py.File('eigenvectors.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
+        f2.create_dataset(str(chi), data=eigvecs)
+        f2.close()
+    mpiutil.barrier()
+    return None
 
 def solve_whole_system_and_save_2(chimax):
     f1 = h5py.File('eigenvalues.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
