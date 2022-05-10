@@ -31,7 +31,7 @@ def solve_whole_system_and_save_3(chimax):
         f2.close()
     return None
 
-def solve_whole_system_and_save_2(chimax):
+def solve_whole_system_and_save_2(chimin,chimax):
     f1 = h5py.File('eigenvalues.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
     f2 = h5py.File('eigenvectors.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
 
@@ -45,7 +45,7 @@ def solve_whole_system_and_save_2(chimax):
         f2.create_dataset(str(Chi), data=eig_vecs)
         return None
 
-    chi_array = list(np.arange(chimax + 1))
+    chi_array = list(np.arange(chimin,chimax + 1))
     mpiutil.parallel_jobs_no_gather(solve_Chi_eigen_sys_2, chi_array, method="alt")
     f1.close()
     f2.close()
