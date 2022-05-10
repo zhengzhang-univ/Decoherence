@@ -10,6 +10,5 @@
 
 source activate hirax_sims
 
-export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 cd /home/zzhang/Decoherence
 srun --mpi=pmi2 python EigenSolver.py
