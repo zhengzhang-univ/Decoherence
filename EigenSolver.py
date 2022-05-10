@@ -1,0 +1,3 @@
+from RadiationField.MixingMatricesSolver import solve_whole_system_and_save_1
+
+solve_whole_system_and_save_1(0,1000)
