@@ -57,10 +57,10 @@ def solve_whole_system_and_save_1(chimin, chimax):
     eig_vals_list, eig_vecs_list = list(zip(*Result))
     if mpiutil.rank0:
         f1 = h5py.File('eigenvalues.hdf5', 'w')
-        f1.create_dataset(str(chimax), data=eig_vals_list, chunks=True)
+        f1.create_dataset(str(chimax), data=eig_vals_list, chunks=True, dtype=float)
         f1.close()
         f2 = h5py.File('eigenvectors.hdf5', 'w')
-        f2.create_dataset(str(chimax), data=eig_vecs_list , chunks=True)
+        f2.create_dataset(str(chimax), data=eig_vecs_list , chunks=True, dtype=float)
         f2.close()
     return
 
