@@ -25,8 +25,8 @@ def solve_Chi_eigen_sys(Chi):
 
 
 def solve_whole_system_and_save_2(chimax):
-    f1 = h5py.File('eigenvalues.hdf5', 'w')
-    f2 = h5py.File('eigenvectors.hdf5', 'w')
+    f1 = h5py.File('eigenvalues.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
+    f2 = h5py.File('eigenvectors.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
 
     def solve_Chi_eigen_sys_2(Chi):
         Nmax = math.floor(Chi / 2)
