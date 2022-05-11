@@ -1,3 +1,3 @@
-from RadiationField.MixingMatricesSolver import solve_whole_system_and_save_3
+from RadiationField.MixingMatricesSolver import parallel_solve_mixing_matrices_and_save
 
-solve_whole_system_and_save_3(0,400)
+parallel_solve_mixing_matrices_and_save(0,400)
