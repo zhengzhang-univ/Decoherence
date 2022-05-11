@@ -10,7 +10,7 @@ def solve_Chi_eigen_sys(Chi):
     Nmax = math.floor(Chi / 2)
     A = np.zeros((Nmax + 1, Nmax + 1))
     for i in range(Nmax):
-        A[i, i + 1] = A[i + 1, i] = TransferMatrix_rowN(Chi, i + 1)
+        A[i, i + 1] = A[i + 1, i] = TransferMatrix_rowN(Chi, i)
     eig_vals, eig_vecs = np.linalg.eigh(A)
     return eig_vals, eig_vecs
 
