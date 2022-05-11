@@ -25,7 +25,7 @@ def solve_whole_system_and_save_3(chimax):
         f1 = h5py.File('eigenvalues.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
         f1.create_dataset(str(chi), data=eigvals)
         f2 = h5py.File('eigenvectors.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
-        f2.create_dataset(str(chi), data=eigvecs, chunks=True)
+        f2.create_dataset(str(chi), data=eigvecs)
         mpiutil.barrier()
         f1.close()
         f2.close()
