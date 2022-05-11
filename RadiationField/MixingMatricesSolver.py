@@ -51,10 +51,11 @@ def parallel_solve_mixing_matrices_and_save(chimin,chimax):
         dset_1[chi_0+rank][:] = eig_vals
         dset_2[chi_0+rank][:,:] = eig_vecs
     chi_0 = chimin + nbatch * size
-    if rank <= (chimax - chi_0):
+    if rank < (chimax - chi_0):
         eig_vals, eig_vecs = solve_Chi_eigen_sys(rank+chi_0)
         dset_1[chi_0 + rank][:] = eig_vals
         dset_2[chi_0 + rank][:, :] = eig_vecs
+
     mpiutil.barrier()
     f1.close()
     f2.close()
