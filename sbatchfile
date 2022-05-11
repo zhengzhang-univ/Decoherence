@@ -8,7 +8,7 @@
 #SBATCH --job-name=decoherence
 
 
-source activate radiation
+source activate decoherence
 
 cd /home/zzhang/Decoherence
 srun --mpi=pmi2 python EigenSolver.py
