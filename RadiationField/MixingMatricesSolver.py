@@ -14,13 +14,13 @@ def solve_Chi_eigen_sys(Chi):
     eig_vals, eig_vecs = np.linalg.eigh(A)
     return eig_vals, eig_vecs
 
-def solve_whole_system_and_save_3(chimax):
+def solve_whole_system_and_save_3(chimin,chimax):
     rank=mpiutil.rank
     size=mpiutil.size
-    nbatch = math.floor(chimax/size)
+    nbatch = math.floor((chimax-chimin)/size)
     for i in range(nbatch+1):
         mpiutil.barrier()
-        chi: int = rank + size * i
+        chi: int = chimin + rank + size * i
         eigvals, eigvecs = solve_Chi_eigen_sys(chi)
         f1 = h5py.File('eigenvalues.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
         f1.create_dataset(str(chi), data=eigvals)
