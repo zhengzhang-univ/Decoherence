@@ -41,7 +41,7 @@ class two_osci_solved():
         def get_initial_condition(chi):
             V = sympy.Matrix(self.eigen_vecs(chi))
             g_i =  V.H * self.init_coeff_lists[chi]
-            return g_i #type sympy Matrix
+            return sympy.N(g_i) #type sympy Matrix
         Chi_array = list(np.arange(self.Chimax + 1))
         self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")
         return
@@ -58,12 +58,12 @@ class two_osci_solved():
         mpiutil.barrier()
         for i in range(nbatch):
             chi = i * size+rank
-            aux_array = sympy.Matrix(self.eigen_vecs(chi))*sympy.diag(*list(self.init_cond_lists[chi]))
-            dset[chi][:,:] = np.array(sympy.N(aux_array),dtype=complex)
+            aux_array = self.eigen_vecs(chi)@sympy.diag(*list(self.init_cond_lists[chi]))
+            dset[chi][:,:] = np.array(aux_array).astype(np.complex128)
         chi = nbatch * size + rank
         if chi <= self.Chimax:
-            aux_array = sympy.Matrix(self.eigen_vecs(chi))*sympy.diag(*list(self.init_cond_lists[chi]))
-            dset[chi][:,:] = np.array(sympy.N(aux_array),dtype=complex)
+            aux_array = self.eigen_vecs(chi)@sympy.diag(*list(self.init_cond_lists[chi]))
+            dset[chi][:,:] = np.array(aux_array).astype(np.complex128)
         f.close()
         self.projected_vecs_f = h5py.File('aux_array.hdf5','r')
 
