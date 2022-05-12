@@ -7,7 +7,6 @@ from sympy.physics.qho_1d import coherent_state
 from . import mpiutil
 import h5py
 
-local_chis: list = None
 eig_vals = []
 eig_vecs = []
 
@@ -29,8 +28,7 @@ class two_osci_solved():
         self.init_coeff_lists = [np.array([sympy.N(self.get_init_coeff(N, Chi - 2 * N))
                                                for N in range(math.floor(Chi / 2) + 1)]).astype(complex)
                                  for Chi in range(Chimax + 1)]
-        self.solve_initial_conditions()
-        local_chis = mpiutil.partition_list_mpi(np.arange(Chimax+1), method="alt", comm=mpiutil._comm)
+        self.local_chis = mpiutil.partition_list_mpi(np.arange(Chimax+1), method="alt", comm=mpiutil._comm)
 
         def eigen_vals(chi):
             return f1[str(chi)][...]
@@ -38,11 +36,12 @@ class two_osci_solved():
         def eigen_vecs(chi):
             return f2[str(chi)][...]
 
-        for chi in local_chis:
+        for chi in self.local_chis:
             eig_vals.append(eigen_vals(chi))
             eig_vecs.append(eigen_vecs(chi))
         f1.close()
         f2.close()
+        self.solve_initial_conditions()
 
 
     def get_init_coeff(self, N, n):
@@ -54,7 +53,7 @@ class two_osci_solved():
     def solve_initial_conditions(self):
         def get_initial_condition(chi):
             ind = math.floor(chi/mpiutil.size)
-            assert local_chis[ind] == chi
+            assert self.local_chis[ind] == chi
             V = np.matrix(eig_vecs[ind])
             g_i =  np.array(V.H) @ self.init_coeff_lists[chi].reshape(-1,1)
             return g_i #type sympy Matrix
