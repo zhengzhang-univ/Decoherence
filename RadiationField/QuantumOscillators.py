@@ -38,9 +38,8 @@ class two_osci_solved():
         return math.floor(Chi / 2)
 
     def solve_initial_conditions(self):
-        f = h5py.File(self.datapath+"eigenvectors.hdf5", 'r')
         def get_initial_condition(chi):
-            V = sympy.Matrix(f[str(chi)][...])
+            V = sympy.Matrix(self.eigen_vecs(chi))
             g_i =  V.H * self.init_coeff_lists[chi]
             return g_i #type sympy Matrix
         Chi_array = list(np.arange(self.Chimax + 1))
