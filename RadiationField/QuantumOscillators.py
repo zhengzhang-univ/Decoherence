@@ -31,6 +31,7 @@ class two_osci_solved():
         self.solve_initial_conditions()
         if mpiutil.rank0:
             self.create_auxiliary_array()
+        mpiutil.barrier()
         self.projected_vecs_f = h5py.File('aux_array.hdf5', 'r')
 
     def get_init_coeff(self, N, n):
