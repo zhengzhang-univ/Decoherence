@@ -29,7 +29,9 @@ class two_osci_solved():
                                                for N in range(math.floor(Chi / 2) + 1)])
                                  for Chi in range(Chimax + 1)]
         self.solve_initial_conditions()
-        self.create_auxiliary_array()
+        if mpiutil.rank0:
+            self.create_auxiliary_array()
+        self.projected_vecs_f = h5py.File('aux_array.hdf5', 'r')
 
     def get_init_coeff(self, N, n):
         return coherent_state(N,self.c_list[0])*coherent_state(n,self.c_list[1])
@@ -46,7 +48,17 @@ class two_osci_solved():
         self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")
         return
 
+
     def create_auxiliary_array(self):
+        f = h5py.File('aux_array.hdf5','w')
+        for chi in range(self.Chimax+1):
+            aux_array = self.eigen_vecs(chi) @ sympy.diag(*list(self.init_cond_lists[chi]))
+            f.create_dataset('{0}'.format(chi),data=aux_array,dtype=complex)
+        f.close()
+        print("Eigenvector array has been projected!")
+
+
+    def create_auxiliary_array_parallel(self):
         rank = mpiutil.rank
         size = mpiutil.size
         nbatch = math.floor(self.Chimax / size)
@@ -59,11 +71,11 @@ class two_osci_solved():
         for i in range(nbatch):
             chi = i * size+rank
             aux_array = self.eigen_vecs(chi)@sympy.diag(*list(self.init_cond_lists[chi]))
-            dset[chi][:,:] = np.array(aux_array).astype(np.complex128)
+            dset[chi][:,:] = np.array(aux_array).astype(complex)
         chi = nbatch * size + rank
         if chi <= self.Chimax:
             aux_array = self.eigen_vecs(chi)@sympy.diag(*list(self.init_cond_lists[chi]))
-            dset[chi][:,:] = np.array(aux_array).astype(np.complex128)
+            dset[chi][:,:] = np.array(aux_array).astype(complex)
         f.close()
         self.projected_vecs_f = h5py.File('aux_array.hdf5','r')
 
@@ -136,3 +148,6 @@ class two_osci_solved():
         result = [self.density_matrix_t(t,oscillator) for t in tlist]
         density_matrices, num_photons = list(zip(*result))
         return np.array(density_matrices,dtype=complex), np.array(num_photons, dtype=float)
+
+
+
