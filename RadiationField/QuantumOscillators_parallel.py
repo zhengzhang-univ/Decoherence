@@ -55,7 +55,7 @@ class two_osci_solved():
             ind = math.floor(chi/mpiutil.size)
             assert self.local_chis[ind] == chi
             V = np.matrix(eig_vecs[ind])
-            g_i =  np.array(V.H) @ self.init_coeff_lists[chi].reshape(-1,1)
+            g_i = np.einsum("ij,j -> i", np.array(V.H), self.init_coeff_lists[chi])
             return g_i #type sympy Matrix
         Chi_array = list(np.arange(self.Chimax + 1))
         self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")
