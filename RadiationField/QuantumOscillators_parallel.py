@@ -7,6 +7,10 @@ from sympy.physics.qho_1d import coherent_state
 from . import mpiutil
 import h5py
 
+local_chis: list = None
+eig_vals = []
+eig_vecs = []
+
 class two_osci_solved():
     def __init__(self, omega_list, c_list, Chimax, Lambda, path):
         self.transfer_matrices = None
@@ -26,7 +30,7 @@ class two_osci_solved():
                                                for N in range(math.floor(Chi / 2) + 1)]).astype(complex)
                                  for Chi in range(Chimax + 1)]
         self.solve_initial_conditions()
-        self.local_chis = mpiutil.partition_list_mpi(np.arange(Chimax+1), method="alt", comm=mpiutil._comm)
+        local_chis = mpiutil.partition_list_mpi(np.arange(Chimax+1), method="alt", comm=mpiutil._comm)
 
         def eigen_vals(chi):
             return f1[str(chi)][...]
@@ -34,12 +38,9 @@ class two_osci_solved():
         def eigen_vecs(chi):
             return f2[str(chi)][...]
 
-        self.eig_vals = []
-        self.eig_vecs = []
-
-        for chi in self.local_chis:
-            self.eig_vals.append(eigen_vals(chi))
-            self.eig_vecs.append(eigen_vecs(chi))
+        for chi in local_chis:
+            eig_vals.append(eigen_vals(chi))
+            eig_vecs.append(eigen_vecs(chi))
         f1.close()
         f2.close()
 
@@ -53,8 +54,8 @@ class two_osci_solved():
     def solve_initial_conditions(self):
         def get_initial_condition(chi):
             ind = math.floor(chi/mpiutil.size)
-            assert self.local_chis[ind] == chi
-            V = np.matrix(self.eig_vecs[ind])
+            assert local_chis[ind] == chi
+            V = np.matrix(eig_vecs[ind])
             g_i =  np.array(V.H) @ self.init_coeff_lists[chi].reshape(-1,1)
             return g_i #type sympy Matrix
         Chi_array = list(np.arange(self.Chimax + 1))
@@ -67,8 +68,8 @@ class two_osci_solved():
         def linear_solver(Chi):
             ind = math.floor(Chi / mpiutil.size)
             Nmax = self.Nmax(Chi)
-            basis = np.exp(self.eig_vals[ind] * tt)
-            aux = np.einsum("ij, j, j -> i", self.eig_vecs[ind], self.init_cond_lists[Chi], basis)
+            basis = np.exp(eig_vals[ind] * tt)
+            aux = np.einsum("ij, j, j -> i", eig_vecs[ind], self.init_cond_lists[Chi], basis)
             N_avrg = sum(np.absolute(aux)**2 * np.arange(Nmax+1))
             return aux, N_avrg
         result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
