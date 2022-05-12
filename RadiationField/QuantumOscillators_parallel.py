@@ -9,9 +9,6 @@ import h5py
 
 class two_osci_solved():
     def __init__(self, omega_list, c_list, Chimax, Lambda, path):
-        """
-        c_list = [C, c]
-        """
         self.transfer_matrices = None
         hb = sympy.N(hbar)
         m_list = [hb * omega for omega in omega_list]
@@ -55,7 +52,9 @@ class two_osci_solved():
 
     def solve_initial_conditions(self):
         def get_initial_condition(chi):
-            V = np.matrix(self.eigen_vecs(chi))
+            ind = math.floor(chi/mpiutil.size)
+            assert self.local_chis[ind] == chi
+            V = np.matrix(self.eig_vecs[ind])
             g_i =  np.array(V.H) @ self.init_coeff_lists[chi].reshape(-1,1)
             return g_i #type sympy Matrix
         Chi_array = list(np.arange(self.Chimax + 1))
@@ -66,9 +65,10 @@ class two_osci_solved():
         tt = self.factor * t
         Chi_array = list(np.arange(self.Chimax + 1))
         def linear_solver(Chi):
+            ind = math.floor(Chi / mpiutil.size)
             Nmax = self.Nmax(Chi)
-            basis = np.exp(self.eigen_vals(Chi) * tt)
-            aux = np.einsum("ij, j, j -> i", self.eigen_vecs(Chi), self.init_cond_lists[Chi], basis)
+            basis = np.exp(self.eig_vals[ind] * tt)
+            aux = np.einsum("ij, j, j -> i", self.eig_vecs[ind], self.init_cond_lists[Chi], basis)
             N_avrg = sum(np.absolute(aux)**2 * np.arange(Nmax+1))
             return aux, N_avrg
         result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")

@@ -40,6 +40,7 @@ class n_coherent_oscillators():
         self.crea_matrix_2 = (oper_array.T)@(oper_array.T)
         self.lam = N(hbar*10**18)
         self.factor = 2*M.sqrt(2)*self.lam/(8j*N(hbar)*self.omegas[0]**2*self.omegas[1])
+
         
         
     def single_coher_osci_coeffs(self, c, n):
