@@ -10,7 +10,7 @@ c_list = [5,5]
 def heavist_chi(c_list):
     return int(2*np.absolute(c_list[0])**2 + np.absolute(c_list[1])**2)
 
-path = "/Users/zheng/Dropbox/project with Nick/"
+path = "/home/zzhang/Decoherence/"
 two_ocsi_sys = QuantumOscillators.two_osci_solved(omega_list, c_list, heavist_chi(c_list)*2, 1e-16, path)
 dm_array, N_averg = two_ocsi_sys.density_matrix_evolution(0,1000,1, 'N')
 
