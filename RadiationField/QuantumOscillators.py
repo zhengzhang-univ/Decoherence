@@ -30,6 +30,7 @@ class two_osci_solved():
                                                for N in range(math.floor(Chi / 2) + 1)])
                                  for Chi in range(Chimax + 1)]
         self.solve_initial_conditions()
+        self.create_auxiliary_array()
 
     def get_init_coeff(self, N, n):
         return coherent_state(N,self.c_list[0])*coherent_state(n,self.c_list[1])
@@ -41,10 +42,32 @@ class two_osci_solved():
         def get_initial_condition(chi):
             V = sympy.Matrix(self.eigen_vecs(chi))
             g_i =  V.H * self.init_coeff_lists[chi]
-            return g_i #type sympy Matrix
+            return sympy.N(g_i) #type sympy Matrix
         Chi_array = list(np.arange(self.Chimax + 1))
         self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")
         return
+
+    def create_auxiliary_array(self):
+        rank = mpiutil.rank
+        size = mpiutil.size
+        nbatch = math.floor(self.Chimax / size)
+        f = h5py.File('aux_array.hdf5','w', driver='mpio', comm=mpiutil._comm)
+        dset = []
+        for chi in range(self.Chimax+1):
+            Nmax = self.Nmax(chi)
+            dset.append(f.create_dataset('{0}'.format(chi),(Nmax+1,Nmax+1)))
+        mpiutil.barrier()
+        for i in range(nbatch):
+            chi = i * size+rank
+            aux_array = sympy.Matrix(self.eigen_vecs(chi))*sympy.diag(*list(self.init_cond_lists[chi]))
+            dset[chi][:,:] = aux_array
+        chi = nbatch * size + rank
+        if chi <= self.Chimax:
+            aux_array = sympy.Matrix(self.eigen_vecs(chi))*sympy.diag(*list(self.init_cond_lists[chi]))
+            dset[chi][:,:] = aux_array
+        f.close()
+        self.projected_vecs_f = h5py.File('aux_array.hdf5','r')
+
 
     def eigen_vals(self, chi):
         return self.f1[str(chi)][...]
@@ -52,12 +75,25 @@ class two_osci_solved():
     def eigen_vecs(self, chi):
         return self.f2[str(chi)][...]
 
+    def projected_vecs(self, chi):
+        return self.projected_vecs_f[str(chi)][...]
+
     def all_coeffs_normalized_t(self, t):
         tt = self.factor * t
         Chi_array = list(np.arange(self.Chimax + 1))
         def linear_solver(Chi):
             basis = (np.exp(self.eigen_vals(Chi) * tt)).reshape(-1,1)
-            aux_array = sympy.Matrix(self.eigen_vecs(Chi))*sympy.diag(*list(self.init_cond_lists[Chi]))
+            aux = self.projected_vecs(Chi) * sympy.Matrix(basis)
+            return aux
+        result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
+        return result
+    """
+    def all_coeffs_normalized_t(self, t):
+        tt = self.factor * t
+        Chi_array = list(np.arange(self.Chimax + 1))
+        def linear_solver(Chi):
+            basis = (np.exp(self.eigen_vals(Chi) * tt)).reshape(-1,1)
+            aux_array = sympy.Matrix(self.projected_vecs(Chi))*sympy.diag(*list(self.init_cond_lists[Chi]))
             aux = aux_array * sympy.Matrix(basis)
             #amp_square = aux.norm()**2
             return aux #, amp_square
@@ -66,6 +102,10 @@ class two_osci_solved():
         #norm = sympy.sqrt(sum(amp2))
         #return [item/norm for item in coeffs]
         return result
+    """
+    def N_avrg(self, t):
+        tt = self.factor * t
+        Chi_array = list(np.arange(self.Chimax + 1))
 
     def turn_list_to_array(self, lists):
         result = sympy.zeros(self.Nmax(self.Chimax) + 1, self.Chimax + 1)
