@@ -53,8 +53,9 @@ class two_osci_solved():
     def create_auxiliary_array(self):
         f = h5py.File('aux_array.hdf5','w')
         for chi in range(self.Chimax+1):
-            aux_array = self.eigen_vecs(chi) @ sympy.diag(*list(self.init_cond_lists[chi]))
-            f.create_dataset('{0}'.format(chi), data=aux_array, dtype=newtype)
+            aux_array = self.eigen_vecs(chi) @ np.array(sympy.diag(*list(self.init_cond_lists[chi])))
+            dset = f.create_dataset('{0}'.format(chi), data=aux_array.shape, dtype=complex)
+            dset[:,:]=aux_array.astype(complex)
         f.close()
         print("Eigenvector array has been projected!")
 
