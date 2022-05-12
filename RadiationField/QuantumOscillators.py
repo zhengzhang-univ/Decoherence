@@ -1,6 +1,6 @@
 import math
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import sympy
 import sympy as sp
 from sympy.physics.quantum.constants import hbar
@@ -97,7 +97,7 @@ class two_osci_solved():
         result = [self.density_matrix_t(t,oscillator) for t in tlist]
         density_matrices, num_photons = list(zip(*result))
         return np.array(density_matrices,dtype=complex), np.array(num_photons, dtype=float)
-
+"""
 class Chi_analysis(two_osci_solved):
     def Average_N_decomposed_evolution(self, st, et, dt):
         """
@@ -170,5 +170,5 @@ class Chi_analysis(two_osci_solved):
         #plt.imshow(result, cmap='gray')
         plt.tight_layout()
         plt.show()
-
+"""
 
