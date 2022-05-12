@@ -2,7 +2,6 @@ import math
 import numpy as np
 #import matplotlib.pyplot as plt
 import sympy
-import sympy as sp
 from sympy.physics.quantum.constants import hbar
 from sympy.physics.qho_1d import coherent_state
 from . import mpiutil
@@ -15,7 +14,7 @@ class two_osci_solved():
         m_list = [M, m]
         """
         self.transfer_matrices = None
-        hb = sp.N(hbar)
+        hb = sympy.N(hbar)
         m_list = [hb * omega for omega in omega_list]
         self.factor = float(
             Lambda * math.sqrt(hb / (2 * m_list[0] * omega_list[0])) * (hb / (2 * m_list[1] * omega_list[1])) / hb) * (
@@ -42,7 +41,7 @@ class two_osci_solved():
         def get_initial_condition(chi):
             V = sympy.Matrix(self.eigen_vecs(chi))
             g_i =  V.H * self.init_coeff_lists[chi]
-            return sympy.N(g_i) #type sympy Matrix
+            return g_i #type sympy Matrix
         Chi_array = list(np.arange(self.Chimax + 1))
         self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")
         return
@@ -60,11 +59,11 @@ class two_osci_solved():
         for i in range(nbatch):
             chi = i * size+rank
             aux_array = sympy.Matrix(self.eigen_vecs(chi))*sympy.diag(*list(self.init_cond_lists[chi]))
-            dset[chi][:,:] = aux_array
+            dset[chi][:,:] = complex(aux_array)
         chi = nbatch * size + rank
         if chi <= self.Chimax:
             aux_array = sympy.Matrix(self.eigen_vecs(chi))*sympy.diag(*list(self.init_cond_lists[chi]))
-            dset[chi][:,:] = aux_array
+            dset[chi][:,:] = complex(aux_array)
         f.close()
         self.projected_vecs_f = h5py.File('aux_array.hdf5','r')
 
@@ -122,10 +121,10 @@ class two_osci_solved():
         photon_num_avrg = None
         if oscillator == 'n':
             result = C_Nn.H * C_Nn
-            photon_num_avrg = sympy.N(sum([result[i,i]*i for i in range(b)]))
+            photon_num_avrg = float(sum([result[i,i]*i for i in range(b)]))
         elif oscillator == 'N':
             result = C_Nn * C_Nn.H
-            photon_num_avrg = sympy.N(sum([result[i,i]*i for i in range(A)]))
+            photon_num_avrg = float(sum([result[i,i]*i for i in range(A)]))
         return result, photon_num_avrg
 
     def density_matrix_t(self, t, oscillator):
