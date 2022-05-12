@@ -26,14 +26,14 @@ class two_osci_solved():
         self.f2 = h5py.File(path + "eigenvectors.hdf5", 'r')
         self.indices_lists = [[(N, Chi - 2 * N) for N in range(math.floor(Chi / 2) + 1)]
                                for Chi in range(Chimax + 1)]
-        self.init_coeff_lists = [sympy.Matrix([self.get_init_coeff(N, Chi - 2 * N)
-                                               for N in range(math.floor(Chi / 2) + 1)])
+        self.init_coeff_lists = [np.array([sympy.N(self.get_init_coeff(N, Chi - 2 * N))
+                                               for N in range(math.floor(Chi / 2) + 1)]).astype(complex)
                                  for Chi in range(Chimax + 1)]
         self.solve_initial_conditions()
-        if mpiutil.rank0:
-            self.create_auxiliary_array()
-        mpiutil.barrier()
-        self.projected_vecs_f = h5py.File(path+'aux_array.hdf5', 'r')
+        #if mpiutil.rank0:
+        #    self.create_auxiliary_array()
+        #mpiutil.barrier()
+        #self.projected_vecs_f = h5py.File(path+'aux_array.hdf5', 'r')
 
     def get_init_coeff(self, N, n):
         return coherent_state(N,self.c_list[0])*coherent_state(n,self.c_list[1])
@@ -43,9 +43,9 @@ class two_osci_solved():
 
     def solve_initial_conditions(self):
         def get_initial_condition(chi):
-            V = sympy.Matrix(self.eigen_vecs(chi))
-            g_i =  V.H * self.init_coeff_lists[chi]
-            return sympy.N(g_i) #type sympy Matrix
+            V = np.matrix(self.eigen_vecs(chi))
+            g_i =  np.array(V.H) @ self.init_coeff_lists[chi].reshape(-1,1)
+            return g_i #type sympy Matrix
         Chi_array = list(np.arange(self.Chimax + 1))
         self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")
         return
@@ -54,10 +54,9 @@ class two_osci_solved():
     def create_auxiliary_array(self):
         f = h5py.File(self.datapath+'aux_array.hdf5','w')
         for chi in range(self.Chimax+1):
-            aux_array = self.eigen_vecs(chi) @ np.array(sympy.diag(*list(self.init_cond_lists[chi])))
-            newtype = np.dtype(aux_array)
-            dset = f.create_dataset('{0}'.format(chi), aux_array.shape,dtype=newtype)
-            dset[:,:]=aux_array.astype(newtype)
+            aux_array = np.einsum("ij,j->ij", self.eigen_vecs(chi), self.init_cond_lists[chi])
+            dset = f.create_dataset('{0}'.format(chi), aux_array.shape,dtype=complex)
+            dset[:,:]=aux_array.astype(complex)
         f.close()
         print("Eigenvector array has been projected!")
 
@@ -90,6 +89,7 @@ class two_osci_solved():
     def eigen_vecs(self, chi):
         return self.f2[str(chi)][...]
 
+    """
     def projected_vecs(self, chi):
         return self.projected_vecs_f[str(chi)][...]
 
@@ -103,24 +103,18 @@ class two_osci_solved():
         result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
         return result
     """
-    def all_coeffs_normalized_t(self, t):
+    def all_coeffs_t(self, t):
         tt = self.factor * t
         Chi_array = list(np.arange(self.Chimax + 1))
         def linear_solver(Chi):
-            basis = (np.exp(self.eigen_vals(Chi) * tt)).reshape(-1,1)
-            aux_array = sympy.Matrix(self.projected_vecs(Chi))*sympy.diag(*list(self.init_cond_lists[Chi]))
-            aux = aux_array * sympy.Matrix(basis)
-            #amp_square = aux.norm()**2
-            return aux #, amp_square
+            Nmax = self.Nmax(Chi)
+            basis = np.exp(self.eigen_vals(Chi) * tt)
+            aux = np.einsum("ij,j,j->i", self.eigen_vecs(Chi), self.init_cond_lists[Chi], basis)
+            N_avrg = sum(np.absolute(aux)**2 * np.arange(Nmax+1))
+            return aux, N_avrg
         result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
-        #coeffs,amp2= list(zip(*Result))
-        #norm = sympy.sqrt(sum(amp2))
-        #return [item/norm for item in coeffs]
-        return result
-    """
-    def N_avrg(self, t):
-        tt = self.factor * t
-        Chi_array = list(np.arange(self.Chimax + 1))
+        coeffs, N_avrg_decomp = list(zip(*result))
+        return coeffs, sum(N_avrg_decomp)
 
     def turn_list_to_array(self, lists):
         result = sympy.zeros(self.Nmax(self.Chimax) + 1, self.Chimax + 1)
@@ -132,26 +126,30 @@ class two_osci_solved():
 
     def from_list_to_density_mat(self, lists, oscillator):
         C_Nn = self.turn_list_to_array(lists)
-        A,b=sympy.shape(C_Nn)
+        #A,b=sympy.shape(C_Nn)
         result = None
-        photon_num_avrg = None
+        #photon_num_avrg = None
         if oscillator == 'n':
             result = C_Nn.H * C_Nn
-            photon_num_avrg = float(sum([result[i,i]*i for i in range(b)]))
+            #photon_num_avrg = float(sum([result[i,i]*i for i in range(b)]))
         elif oscillator == 'N':
             result = C_Nn * C_Nn.H
-            photon_num_avrg = float(sum([result[i,i]*i for i in range(A)]))
-        return result, photon_num_avrg
+            #photon_num_avrg = float(sum([result[i,i]*i for i in range(A)]))
+        return result #, photon_num_avrg
 
     def density_matrix_t(self, t, oscillator):
-        clist = self.all_coeffs_normalized_t(t)
+        clist, aux = self.all_coeffs_t(t)
         return self.from_list_to_density_mat(clist,oscillator)
 
     def density_matrix_evolution(self, st, et, dt, oscillator):
         tlist = np.arange(st, et, dt)
-        result = [self.density_matrix_t(t,oscillator) for t in tlist]
-        density_matrices, num_photons = list(zip(*result))
-        return np.array(density_matrices,dtype=complex), np.array(num_photons, dtype=float)
+        dm_t=[]
+        N_t=[]
+        for t in tlist:
+            coeff_list, N_avrg = self.all_coeffs_t(t)
+            dm_t.append(self.from_list_to_density_mat(coeff_list,oscillator))
+            N_t.append(N_avrg)
+        return np.array(dm_t,dtype=complex), np.array(N_t, dtype=float)
 
 
 
