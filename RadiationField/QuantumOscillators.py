@@ -59,11 +59,11 @@ class two_osci_solved():
         for i in range(nbatch):
             chi = i * size+rank
             aux_array = sympy.Matrix(self.eigen_vecs(chi))*sympy.diag(*list(self.init_cond_lists[chi]))
-            dset[chi][:,:] = np.array(sympy.N(aux_array))
+            dset[chi][:,:] = np.array(sympy.N(aux_array),dtype=complex)
         chi = nbatch * size + rank
         if chi <= self.Chimax:
             aux_array = sympy.Matrix(self.eigen_vecs(chi))*sympy.diag(*list(self.init_cond_lists[chi]))
-            dset[chi][:,:] = np.array(sympy.N(aux_array))
+            dset[chi][:,:] = np.array(sympy.N(aux_array),dtype=complex)
         f.close()
         self.projected_vecs_f = h5py.File('aux_array.hdf5','r')
 
