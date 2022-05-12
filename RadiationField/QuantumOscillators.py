@@ -1,77 +1,15 @@
-import copy
 import math
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+import sympy
 import sympy as sp
 from sympy.physics.quantum.constants import hbar
-from scipy import linalg
-import scipy.special
+from sympy.physics.qho_1d import coherent_state
 from . import mpiutil
-from . import CoherentState
 import h5py
-coher_osci_coeff = CoherentState.coher_osci_coeff
 
-def TransferMatrix_rowN(Chi, N):
-    return math.sqrt((Chi - 2 * N - 1) * (Chi - 2 * N) * (N + 1))
-
-def solve_Chi_eigen_sys(Chi):
-    Nmax = math.floor(Chi / 2)
-    A = np.zeros((Nmax + 1, Nmax + 1))
-    for i in range(Nmax):
-        A[i, i + 1] = A[i + 1, i] = TransferMatrix_rowN(Chi, i + 1)
-    eig_vals, eig_vecs = np.linalg.eigh(A)
-    return eig_vals, eig_vecs
-
-
-def solve_whole_system_and_save_3(chimax):
-    rank=mpiutil.rank
-    size=mpiutil.size
-    nbatch = math.floor(chimax/size)
-    for i in range(nbatch+1):
-        mpiutil.barrier()
-        chi: int = rank + size * i
-        eigvals, eigvecs = solve_Chi_eigen_sys(chi)
-        f1 = h5py.File('eigenvalues.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
-        f1.create_dataset(str(chi), data=eigvals, chunks=True)
-        f2 = h5py.File('eigenvectors.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
-        f2.create_dataset(str(chi), data=eigvecs, chunks=True)
-        mpiutil.barrier()
-        f1.close()
-        f2.close()
-    return None
-
-def solve_whole_system_and_save_2(chimax):
-    f1 = h5py.File('eigenvalues.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
-    f2 = h5py.File('eigenvectors.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
-
-    def solve_Chi_eigen_sys_2(Chi):
-        Nmax = math.floor(Chi / 2)
-        A = np.zeros((Nmax + 1, Nmax + 1))
-        for i in range(Nmax):
-            A[i, i + 1] = A[i + 1, i] = TransferMatrix_rowN(Chi, i + 1)
-        eig_vals, eig_vecs = np.linalg.eigh(A)
-        f1.create_dataset(str(Chi), data=eig_vals)
-        f2.create_dataset(str(Chi), data=eig_vecs)
-        return None
-
-    chi_array = list(np.arange(chimax + 1))
-    mpiutil.parallel_jobs_no_gather(solve_Chi_eigen_sys_2, chi_array, method="alt")
-    f1.close()
-    f2.close()
-    return None
-
-def solve_whole_system_and_save(chimax):
-    chi_array = list(np.arange(chimax + 1))
-    Result = mpiutil.parallel_map(solve_Chi_eigen_sys, chi_array, method="alt")
-    eig_vals_list, eig_vecs_list = list(zip(*Result))
-    if mpiutil.rank0:
-        with h5py.File("EigenDecomposition.hdf5","w") as f:
-            f.create_dataset("Eigenvalues", data=eig_vals_list, chunks=True)
-            f.create_dataset("Eigenvectors", data=eig_vecs_list, chunks=True)
-    return
-
-class two_osci_basic():
-    def __init__(self, omega_list, c_list, Chimax, Lambda):
+class two_osci_solved():
+    def __init__(self, omega_list, c_list, Chimax, Lambda, path):
         """
         c_list = [C, c]
         m_list = [M, m]
@@ -84,91 +22,53 @@ class two_osci_basic():
                           -1j)
         self.Chimax = Chimax
         self.c_list = np.array(c_list)
-        self.indices_lists = [[(N, Chi - 2 * N) for N in range(math.floor(Chi / 2) + 1)] for Chi in range(Chimax + 1)]
-        self.init_coeff_lists = [np.array([self.get_init_coeff(N, Chi - 2 * N)
-                                         for N in range(math.floor(Chi / 2) + 1)])
+        self.f1 = h5py.File(path + "eigenvalues.hdf5", 'r')
+        self.f2 = h5py.File(path + "eigenvectors.hdf5", 'r')
+        self.indices_lists = [[(N, Chi - 2 * N) for N in range(math.floor(Chi / 2) + 1)]
                                for Chi in range(Chimax + 1)]
-        self.filter_chis()
-        self.solve_the_system()
+        self.init_coeff_lists = [sympy.Matrix([self.get_init_coeff(N, Chi - 2 * N)
+                                               for N in range(math.floor(Chi / 2) + 1)])
+                                 for Chi in range(Chimax + 1)]
+        self.solve_initial_conditions()
 
     def get_init_coeff(self, N, n):
-        return coher_osci_coeff(self.c_list[0], N) * coher_osci_coeff(self.c_list[1], n)
-
-    def filter_chis(self):
-        Chimax_old = copy.deepcopy(self.Chimax)
-        for i in range(Chimax_old+1):
-            chi = Chimax_old-i
-            if np.linalg.norm(self.init_coeff_lists[chi]) == 0:
-                self.Chimax = chi - 1
-            else:
-                break
-        pass
+        return coherent_state(N,self.c_list[0])*coherent_state(n,self.c_list[1])
 
     def Nmax(self,Chi):
         return math.floor(Chi / 2)
 
-    def solve_the_system(self):
-        def aux_crea_f(Chi, N):
-            return math.sqrt((Chi - 2 * N + 2) * (Chi - 2 * N + 1) * N)
-
-        def aux_anni_g(Chi, N):
-            return math.sqrt((Chi - 2 * N - 1) * (Chi - 2 * N) * (N + 1))
-
-        def solve_Chi_eigen_sys(Chi):
-            Nmax = self.Nmax(Chi)
-            A = np.zeros((Nmax + 1, Nmax + 1))
-            for i in range(Nmax):
-                A[i, i + 1] = aux_anni_g(Chi, i)
-                A[i + 1, i] = aux_crea_f(Chi, i + 1)
-            eig_vals, eig_vecs = scipy.linalg.eigh(A)
-            V_H = np.matrix(eig_vecs).getH()
-            g_i = np.array(V_H) @ self.init_coeff_lists[Chi]
-            return eig_vals, eig_vecs, g_i
-
+    def solve_initial_conditions(self):
+        f = h5py.File(self.datapath+"eigenvectors.hdf5", 'r')
+        def get_initial_condition(chi):
+            V = sympy.Matrix(f[str(chi)][...])
+            g_i =  V.H * self.init_coeff_lists[chi]
+            return g_i #type sympy Matrix
         Chi_array = list(np.arange(self.Chimax + 1))
-        Result = mpiutil.parallel_map(solve_Chi_eigen_sys, Chi_array, method="alt")
-        self.eig_vals_lists, self.eig_vecs_lists, self.init_cond_lists = list(zip(*Result))
-        #self.scaled_eig_vals = [self.factor*item for item in self.eig_vals_lists]
-        #self.scaled_eig_vecs = [np.einsum("ij,j->ij",self.eig_vecs_lists[i],self.init_cond_lists[i])
-        #                        for i in range(self.Chimax + 1)]
+        self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")
+        return
 
-    def coeffs_normalized_t(self, t):
+    def eigen_vals(self, chi):
+        return self.f1[str(chi)][...]
+
+    def eigen_vecs(self, chi):
+        return self.f2[str(chi)][...]
+
+    def all_coeffs_normalized_t(self, t):
         tt = self.factor * t
         Chi_array = list(np.arange(self.Chimax + 1))
         def linear_solver(Chi):
-            basis = np.exp(self.eig_vals_lists[Chi] * tt)
-            aux = np.einsum("ij, j, j -> i", self.eig_vecs_lists[Chi], self.init_cond_lists[Chi], basis)
-            module = np.linalg.norm(aux) ** 2
-            return aux, module
+            basis = (np.exp(self.eigen_vals(Chi) * tt)).reshape(-1,1)
+            aux_array = sympy.Matrix(self.eigen_vecs(Chi))*sympy.diag(*list(self.init_cond_lists[Chi]))
+            aux = aux_array * sympy.Matrix(basis)
+            amp_square = aux.norm()**2
+            return aux, amp_square
         Result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
         coeffs,amp2= list(zip(*Result))
-        norm = math.sqrt(sum(amp2))
+        norm = sympy.sqrt(sum(amp2))
         return [item/norm for item in coeffs]
 
-    def linear_solver_chi_basis(self, Chi: int):
-        basis = np.exp(self.factor * self.eig_vals_lists[Chi] * self.t)
-        coeffs_chi_Ns_t = np.einsum("ij, j, j -> i", self.eig_vecs_lists[Chi], self.init_cond_lists[Chi], basis)
-        coeffs_chi_t = np.linalg.norm(coeffs_chi_Ns_t) ** 2
-        Nmax = self.Nmax(Chi)
-        N_averg_chi = sum( np.arange(Nmax+1) * np.absolute(coeffs_chi_Ns_t**2) )/ coeffs_chi_t
-        return coeffs_chi_t, N_averg_chi
-
-    def Observable_N_t(self, t):
-        self.t = t
-        Chi_array = list(np.arange(self.Chimax + 1))
-        Result = mpiutil.parallel_map(self.linear_solver_chi_basis, Chi_array, method="alt")
-        c_chi, N_averg_chi= list(zip(*Result))
-        return sum(np.array(N_averg_chi)*np.array(c_chi))/sum(np.array(c_chi))
-
-    def evolution_of_coefficient_magnitude(self,N,n,t):
-        tt = self.factor * t
-        Chi = 2*N + n
-        basis = np.exp(self.eig_vals_lists[Chi] * tt)
-        result = np.einsum("j, j, j", self.eig_vecs_lists[Chi][N,:], self.init_cond_lists[Chi], basis)
-        return np.absolute(result)
-
     def turn_list_to_array(self, lists):
-        result = np.zeros((self.Chimax + 1, self.Chimax + 1), dtype=complex)
+        result = sympy.zeros(self.Nmax(self.Chimax) + 1, self.Chimax + 1)
         for i in range(self.Chimax + 1):
             for j in range(math.floor(i / 2) + 1):
                 a, b = self.indices_lists[i][j]
@@ -177,36 +77,26 @@ class two_osci_basic():
 
     def from_list_to_density_mat(self, lists, oscillator):
         C_Nn = self.turn_list_to_array(lists)
+        A,b=sympy.shape(C_Nn)
         result = None
+        photon_num_avrg = None
         if oscillator == 'n':
-            result = np.einsum("ij,ik->jk", C_Nn.conjugate(), C_Nn)
+            result = C_Nn.H * C_Nn
+            photon_num_avrg = sympy.N(sum([result[i,i]*i for i in range(b)]))
         elif oscillator == 'N':
-            result = np.einsum("ji,ki->jk", C_Nn.conjugate(), C_Nn)
-        photons = np.sum(result.diagonal() * np.arange(self.Chimax + 1)).real
-        return result, photons
+            result = C_Nn * C_Nn.H
+            photon_num_avrg = sympy.N(sum([result[i,i]*i for i in range(A)]))
+        return result, photon_num_avrg
 
     def density_matrix_t(self, t, oscillator):
-        clist = self.coeffs_normalized_t(t)
+        clist = self.all_coeffs_normalized_t(t)
         return self.from_list_to_density_mat(clist,oscillator)
 
     def density_matrix_evolution(self, st, et, dt, oscillator):
         tlist = np.arange(st, et, dt)
-        Result = [self.density_matrix_t(t,oscillator) for t in tlist]
-        density_matrices, num_photons = list(zip(*Result))
-        return np.array(density_matrices), np.array(num_photons)
-
-class two_osci_solved(two_osci_basic):
-    def solve_the_system(self):
-        eigen_data = h5py.File("EigenDecomposition.hdf5", 'r')
-        self.eig_vals_lists=eigen_data["Eigenvalues"]
-        self.eig_vecs_lists=eigen_data["Eigenvectors"]
-        def get_initial_conditions(chi):
-            V_H = np.matrix(self.eig_vecs_lists[chi]).getH()
-            g_i = np.array(V_H) @ self.init_coeff_lists[chi]
-            return g_i
-        Chi_array = list(np.arange(self.Chimax + 1))
-        self.init_cond_lists = mpiutil.parallel_map(get_initial_conditions, Chi_array, method="alt")
-        return
+        result = [self.density_matrix_t(t,oscillator) for t in tlist]
+        density_matrices, num_photons = list(zip(*result))
+        return np.array(density_matrices,dtype=complex), np.array(num_photons, dtype=float)
 
 class Chi_analysis(two_osci_solved):
     def Average_N_decomposed_evolution(self, st, et, dt):
@@ -235,24 +125,26 @@ class Chi_analysis(two_osci_solved):
         """
         Return: Time sequence of the square of the amplitude of the coefficient.
         """
-        return [self.single_coefficient_t(Chi, N, t) for t in ts]
+        return [self.single_coefficient_amp_square_t(Chi, N, t) for t in ts]
 
-    def single_coefficient_t(self, Chi, N, t):
+    def single_coefficient_amp_square_t(self, Chi, N, t):
         """
         Return: the square of the amplitude.
         """
         tt = self.factor * t
-        basis = np.exp(self.eig_vals_lists[Chi] * tt)
-        result = np.einsum("j, j, j", self.eig_vecs_lists[Chi][N, :], self.init_cond_lists[Chi], basis)
-        return np.absolute(result) ** 2
+        basis = (np.exp(self.eigen_vals(Chi) * tt)).reshape(-1,1)
+        aux_array = sympy.Matrix(self.eigen_vecs(Chi)) * sympy.diag(*list(self.init_cond_lists[Chi]))
+        aux = aux_array * sympy.Matrix(basis)
+        return np.absolute(sympy.N(aux[N])) ** 2
 
     def coefficients_chi_decomposed_evolution(self, Chi, ts):
         return np.array([self.coefficients_chi_decomposed_t(Chi, t) for t in ts])
 
     def coefficients_chi_decomposed_t(self, Chi, t):
         tt = self.factor * t
-        basis = np.exp(self.eig_vals_lists[Chi] * tt)
-        aux = np.einsum("ij, j, j->i", self.eig_vecs_lists[Chi], self.init_cond_lists[Chi], basis)
+        basis = (np.exp(self.eigen_vals(Chi) * tt)).reshape(-1, 1)
+        aux_array = sympy.Matrix(self.eigen_vecs(Chi)) * sympy.diag(*list(self.init_cond_lists[Chi]))
+        aux = aux_array * sympy.Matrix(basis)
         result=np.absolute(aux) ** 2
         #result_weighted_by_N = result*np.arange(self.Nmax(Chi)+1)/sum(result)
         c_chi = sum(result)

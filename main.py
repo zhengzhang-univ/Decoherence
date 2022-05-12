@@ -1,13 +1,31 @@
 import numpy as np
 from RadiationField import QuantumOscillators, mpiutil
 import h5py
-#import matplotlib.pyplot as plt
-#from RadiationField.visulization import plots_2d_in_3d, animation_imshow
 import time
 st = time.time()
-#QuantumOscillators.solve_whole_system_and_save_3(100)
+
+omega_list = list(np.array([2e6, 1e6],dtype=int))
+c_list = [5,5]
+
+def heavist_chi(c_list):
+    return int(2*np.absolute(c_list[0])**2 + np.absolute(c_list[1])**2)
+
+path = "/Users/zheng/Dropbox/project with Nick/"
+two_ocsi_sys = QuantumOscillators.two_osci_solved(omega_list, c_list, heavist_chi(c_list)*2, 1e-16, path)
+dm_array, N_averg = two_ocsi_sys.density_matrix_evolution(0,1000,1, 'N')
+
 et = time.time()
-print("Elapsed time (s): {}".format(et-st))
+if mpiutil.rank0:
+    print("Elapsed time (s): {}".format(et - st))
+    tlist = np.linspace(0,1000,1)
+    with h5py.File("oscillator_N.hdf5", "w") as f:
+        f.create_dataset("t",data=tlist)
+        f.create_dataset("density_matrix_ts",data=dm_array)
+        f.create_dataset("N",data=N_averg)
+        f.create_dataset("c",data=c_list)
+        f.create_dataset("chimax", data=two_ocsi_sys.Chimax)
+    import os
+    os.system('dbxcli put oscillator_N.hdf5')
 
 """
 omega_list = list(np.array([2e6, 1e6],dtype=int))

@@ -1,3 +1,4 @@
 from RadiationField.MixingMatricesSolver import parallel_solve_mixing_matrices_and_save
 
-parallel_solve_mixing_matrices_and_save(0,4000)
+#parallel_solve_mixing_matrices_and_save(0,4000)
+parallel_solve_mixing_matrices_and_save(4000,10000)

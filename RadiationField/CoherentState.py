@@ -2,7 +2,7 @@ from sympy import *
 import numpy as np
 import math as M
 import scipy.special
-from sympy.physics.qho_1d import psi_n
+from sympy.physics.qho_1d import psi_n, coherent_state
 from sympy.physics.quantum.constants import hbar
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -13,6 +13,9 @@ x, xa, xb, t = symbols("x x_a x_b t", real = True)
 alpha = symbols("alpha", complex = True)
 n = symbols("n", integer = True)
 m, omega = symbols("m omega", positive=True)
+
+def coher_coeff_symb(c, n)
+    return coherent_state(n,c)
 
 def coher_osci_coeff(c, n):
     """
