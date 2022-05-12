@@ -60,12 +60,13 @@ class two_osci_solved():
             basis = (np.exp(self.eigen_vals(Chi) * tt)).reshape(-1,1)
             aux_array = sympy.Matrix(self.eigen_vecs(Chi))*sympy.diag(*list(self.init_cond_lists[Chi]))
             aux = aux_array * sympy.Matrix(basis)
-            amp_square = aux.norm()**2
-            return aux, amp_square
-        Result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
-        coeffs,amp2= list(zip(*Result))
-        norm = sympy.sqrt(sum(amp2))
-        return [item/norm for item in coeffs]
+            #amp_square = aux.norm()**2
+            return aux #, amp_square
+        result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
+        #coeffs,amp2= list(zip(*Result))
+        #norm = sympy.sqrt(sum(amp2))
+        #return [item/norm for item in coeffs]
+        return result
 
     def turn_list_to_array(self, lists):
         result = sympy.zeros(self.Nmax(self.Chimax) + 1, self.Chimax + 1)
