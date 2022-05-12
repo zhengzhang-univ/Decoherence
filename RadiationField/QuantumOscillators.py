@@ -21,6 +21,7 @@ class two_osci_solved():
                           -1j)
         self.Chimax = Chimax
         self.c_list = np.array(c_list)
+        self.datapath = path
         self.f1 = h5py.File(path + "eigenvalues.hdf5", 'r')
         self.f2 = h5py.File(path + "eigenvectors.hdf5", 'r')
         self.indices_lists = [[(N, Chi - 2 * N) for N in range(math.floor(Chi / 2) + 1)]
@@ -32,7 +33,7 @@ class two_osci_solved():
         if mpiutil.rank0:
             self.create_auxiliary_array()
         mpiutil.barrier()
-        self.projected_vecs_f = h5py.File('aux_array.hdf5', 'r')
+        self.projected_vecs_f = h5py.File(path+'aux_array.hdf5', 'r')
 
     def get_init_coeff(self, N, n):
         return coherent_state(N,self.c_list[0])*coherent_state(n,self.c_list[1])
@@ -51,7 +52,7 @@ class two_osci_solved():
 
 
     def create_auxiliary_array(self):
-        f = h5py.File('aux_array.hdf5','w')
+        f = h5py.File(self.datapath+'aux_array.hdf5','w')
         for chi in range(self.Chimax+1):
             aux_array = self.eigen_vecs(chi) @ np.array(sympy.diag(*list(self.init_cond_lists[chi])))
             dset = f.create_dataset('{0}'.format(chi), data=aux_array.shape, dtype=complex)
