@@ -1,5 +1,5 @@
 import numpy as np
-from RadiationField import QuantumOscillators, mpiutil
+from RadiationField import QuantumOscillators_parallel, mpiutil
 import h5py
 import time
 st = time.time()
@@ -11,7 +11,7 @@ def heavist_chi(c_list):
     return int(2*np.absolute(c_list[0])**2 + np.absolute(c_list[1])**2)
 enrg =  heavist_chi(c_list)
 path = "/data/zzhang/"
-two_ocsi_sys = QuantumOscillators.two_osci_solved(omega_list, c_list, enrg*2, 1e-16, path)
+two_ocsi_sys = QuantumOscillators_parallel.two_osci_solved(omega_list, c_list, enrg*2, 1e-16, path)
 dm_array, N_averg = two_ocsi_sys.density_matrix_evolution(0,100,1, 'N')
 
 et = time.time()
