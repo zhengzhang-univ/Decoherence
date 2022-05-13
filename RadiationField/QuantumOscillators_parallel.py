@@ -76,7 +76,7 @@ class two_osci_solved():
         return coeffs, sum(N_avrg_decomp)
 
     def turn_list_to_array(self, lists):
-        result = sympy.zeros(self.Nmax(self.Chimax) + 1, self.Chimax + 1)
+        result = np.zeros(self.Nmax(self.Chimax) + 1, self.Chimax + 1)
         for i in range(self.Chimax + 1):
             for j in range(math.floor(i / 2) + 1):
                 a, b = self.indices_lists[i][j]
@@ -89,10 +89,10 @@ class two_osci_solved():
         result = None
         #photon_num_avrg = None
         if oscillator == 'n':
-            result = C_Nn.H * C_Nn
+            result = np.array(np.matrix(C_Nn).H) @ C_Nn
             #photon_num_avrg = float(sum([result[i,i]*i for i in range(b)]))
         elif oscillator == 'N':
-            result = C_Nn * C_Nn.H
+            result = C_Nn @ np.array(np.matrix(C_Nn).H)
             #photon_num_avrg = float(sum([result[i,i]*i for i in range(A)]))
         return result #, photon_num_avrg
 
