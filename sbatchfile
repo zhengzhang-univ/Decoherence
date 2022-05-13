@@ -12,4 +12,4 @@ source activate decoherence
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 cd /home/zzhang/Decoherence
-srun --mpi=pmi2 python main.py
+srun --mpi=pmi2 python get_N_averg.py
