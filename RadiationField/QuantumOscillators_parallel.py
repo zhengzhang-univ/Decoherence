@@ -76,7 +76,7 @@ class two_osci_solved():
         return coeffs, sum(N_avrg_decomp)
 
     def turn_list_to_array(self, lists):
-        result = np.zeros(self.Nmax(self.Chimax) + 1, self.Chimax + 1)
+        result = np.zeros((self.Nmax(self.Chimax) + 1, self.Chimax + 1), dtype=complex)
         for i in range(self.Chimax + 1):
             for j in range(math.floor(i / 2) + 1):
                 a, b = self.indices_lists[i][j]

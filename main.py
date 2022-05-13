@@ -5,15 +5,18 @@ import time
 st = time.time()
 
 omega_list = list(np.array([2e6, 1e6],dtype=int))
-c_list = [35,35]
-#c_list =
+c_list_1 = [35,35]
+c_list_2 = [15,np.sqrt(3675 - 2*15**2)]
+c_list_3 = [5,np.sqrt(3675 - 2*5**2)]
+c_list_4 = [0.5*np.sqrt(3675 - 5**2), 5]
+
 
 def heavist_chi(c_list):
     return int(2*np.absolute(c_list[0])**2 + np.absolute(c_list[1])**2)
-enrg =  heavist_chi(c_list)
+enrg =  heavist_chi(c_list_1)
 path = "/data/zzhang/"
 #path = "/Users/zheng/Dropbox/project with Nick/"
-two_ocsi_sys = QuantumOscillators_parallel.two_osci_solved(omega_list, c_list, enrg*2, 1e-16, path)
+two_ocsi_sys = QuantumOscillators_parallel.two_osci_solved(omega_list, c_list_1, enrg*2, 1e-16, path)
 dm_array, N_averg = two_ocsi_sys.density_matrix_evolution(0,100,1, 'N')
 
 et = time.time()
@@ -24,7 +27,7 @@ if mpiutil.rank0:
         f.create_dataset("t",data=tlist)
         f.create_dataset("density_matrix_ts",data=dm_array)
         f.create_dataset("N",data=N_averg)
-        f.create_dataset("c",data=c_list)
+        f.create_dataset("c",data=c_list_1)
         f.create_dataset("chimax", data=two_ocsi_sys.Chimax)
     #import os
     #os.system('dbxcli put oscillator_N.hdf5')
