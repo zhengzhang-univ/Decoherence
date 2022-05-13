@@ -17,21 +17,35 @@ enrg =  heavist_chi(c_list_1)
 path = "/data/zzhang/"
 #path = "/Users/zheng/Dropbox/project with Nick/"
 two_ocsi_sys = QuantumOscillators_parallel.two_osci_solved(omega_list, c_list_1, enrg*2, 1e-16, path)
-dm_array, N_averg = two_ocsi_sys.density_matrix_evolution(0,100,1, 'N')
+dm_array, N_averg = two_ocsi_sys.density_matrix_evolution(0,800,1, 'N')
 
 et = time.time()
 if mpiutil.rank0:
     print("Elapsed time (s): {}".format(et - st))
-    tlist = np.linspace(0,100,1)
-    with h5py.File("oscillator_N.hdf5", "w") as f:
+    tlist = np.linspace(0,800,1)
+    with h5py.File(path+"oscillator_N.hdf5", "w") as f:
         f.create_dataset("t",data=tlist)
-        f.create_dataset("density_matrix_ts",data=dm_array)
-        f.create_dataset("N",data=N_averg)
-        f.create_dataset("c",data=c_list_1)
-        f.create_dataset("chimax", data=two_ocsi_sys.Chimax)
+        f.create_dataset("density_matrix_sys1",data=dm_array)
+        f.create_dataset("N_sys1",data=N_averg)
+"""
+two_ocsi_sys = QuantumOscillators_parallel.two_osci_solved(omega_list, c_list_2, enrg * 2, 1e-16, path)
+dm_array, N_averg = two_ocsi_sys.density_matrix_evolution(0, 800, 1, 'N')
+
+if mpiutil.rank0:
+    with h5py.File(path+"oscillator_N.hdf5", "w") as f:
+        f.create_dataset("density_matrix_sys2",data=dm_array)
+        f.create_dataset("N_sys2",data=N_averg)
+
+two_ocsi_sys = QuantumOscillators_parallel.two_osci_solved(omega_list, c_list_3, enrg * 2, 1e-16, path)
+dm_array, N_averg = two_ocsi_sys.density_matrix_evolution(0, 800, 1, 'N')
+
+if mpiutil.rank0:
+    with h5py.File(path + "oscillator_N.hdf5", "w") as f:
+        f.create_dataset("density_matrix_sys3", data=dm_array)
+        f.create_dataset("N_sys3", data=N_averg)
     #import os
     #os.system('dbxcli put oscillator_N.hdf5')
-
+"""
 """
 omega_list = list(np.array([2e6, 1e6],dtype=int))
 
