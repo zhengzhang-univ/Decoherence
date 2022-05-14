@@ -19,6 +19,7 @@ path = "/data/zzhang/"
 
 sys1 = QuantumOscillators_parallel.two_osci_solved(omega_list, c_list_1, enrg*2, 1e-16, path)
 N_averg_1 = sys1.N_averg_evolution(0,1000,1)
+""""
 eig_vecs=sys1.eig_vecs
 eig_vals=sys1.eig_vals
 del sys1
@@ -28,7 +29,7 @@ sys = QuantumOscillators_parallel.two_osci_continue(omega_list, c_list_3, enrg*2
 N_averg_3 = sys.N_averg_evolution(0,1000,1)
 sys = QuantumOscillators_parallel.two_osci_continue(omega_list, c_list_4, enrg*2, 1e-16, path, eig_vecs, eig_vals)
 N_averg_4 = sys.N_averg_evolution(0,1000,1)
-
+"""
 
 
 et = time.time()
