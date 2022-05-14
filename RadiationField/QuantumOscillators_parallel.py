@@ -128,13 +128,14 @@ class two_osci_continue():
             Lambda * math.sqrt(hb / (2 * m_list[0] * omega_list[0])) * (hb / (2 * m_list[1] * omega_list[1])) / hb) * (
                           -1j)
         self.Chimax = Chimax
+        self.scaling = Chimax**2
         self.c_list = np.array(c_list)
         self.datapath = path
 
         self.indices_lists = [[(N, Chi - 2 * N) for N in range(math.floor(Chi / 2) + 1)]
                                for Chi in range(Chimax + 1)]
         def get_init_coeff_chi(Chi):
-            return np.array([sympy.N(Chimax**2 * self.get_init_coeff(N, Chi - 2 * N))
+            return np.array([sympy.N(self.scaling * self.get_init_coeff(N, Chi - 2 * N))
                                                for N in range(math.floor(Chi / 2) + 1)]).astype(complex)
 
         self.local_chis = mpiutil.partition_list_mpi(np.arange(Chimax+1), method="alt", comm=mpiutil._comm)
@@ -173,7 +174,7 @@ class two_osci_continue():
             return aux, N_avrg
         result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
         coeffs, N_avrg_decomp = list(zip(*result))
-        return coeffs, sum(N_avrg_decomp)
+        return coeffs, sum(N_avrg_decomp/(self.scaling**2))
 
     def turn_list_to_array(self, lists):
         result = np.zeros((self.Nmax(self.Chimax) + 1, self.Chimax + 1), dtype=complex)
@@ -217,4 +218,3 @@ class two_osci_continue():
             coeff_list, N_avrg = self.all_coeffs_t(t)
             N_t.append(N_avrg)
         return np.array(N_t)
-
