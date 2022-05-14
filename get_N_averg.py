@@ -8,10 +8,10 @@ import time
 omega_list = list(np.array([2e6, 1e6],dtype=int))
 
 def get_C(chimax, c):
-    avrg_E = chimax/2
-    cmax = math.sqrt(avrg_E)
+    avrg_E = chimax/2.
+    cmax = np.sqrt(avrg_E)
     if c <= cmax:
-        result = math.sqrt(0.5*(avrg_E - c**2))
+        result = np.sqrt(0.5*(avrg_E - c**2))
     else:
         raise ValueError
     return result
@@ -20,7 +20,7 @@ def get_c_list(chimax, c):
     return [get_C(chimax,c),c]
 
 chimax=3999
-c_list_1 = get_c_list(chimax, math.sqrt(3999/2))
+c_list_1 = get_c_list(chimax, math.sqrt(3999/2.))
 c_list_2 = get_c_list(chimax, 30)
 c_list_3 = get_c_list(chimax, 15)
 c_list_4 = get_c_list(chimax, 0)

@@ -179,7 +179,7 @@ class two_osci_continue():
             return aux, N_avrg
         result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
         coeffs, N_avrg_decomp = list(zip(*result))
-        return coeffs, sum(N_avrg_decomp/(self.scaling**2))
+        return coeffs, sum(N_avrg_decomp)/(self.scaling**2)
 
     def turn_list_to_array(self, lists):
         result = np.zeros((self.Nmax(self.Chimax) + 1, self.Chimax + 1), dtype=complex)
