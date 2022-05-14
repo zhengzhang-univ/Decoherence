@@ -10,7 +10,7 @@ omega_list = list(np.array([2e6, 1e6],dtype=int))
 def get_C(chimax, c):
     avrg_E = chimax/2.
     cmax = np.sqrt(avrg_E)
-    if c <= cmax:
+    if c < cmax:
         result = np.sqrt(0.5*(avrg_E - c**2))
     else:
         raise ValueError
@@ -20,7 +20,7 @@ def get_c_list(chimax, c):
     return [get_C(chimax,c),c]
 
 chimax=3999
-c_list_1 = get_c_list(chimax, math.sqrt(3999/2.))
+c_list_1 = [0,np.sqrt(3999/2.)]
 c_list_2 = get_c_list(chimax, 30)
 c_list_3 = get_c_list(chimax, 15)
 c_list_4 = get_c_list(chimax, 0)
@@ -28,7 +28,7 @@ c_list_4 = get_c_list(chimax, 0)
 path = "/data/zzhang/"
 #path = "/Users/zheng/Dropbox/project with Nick/"
 t1 = time.time()
-sys1 = QuantumOscillators_parallel.two_osci_solved(3999, c_list_1, chimax, 1e-16, path)
+sys1 = QuantumOscillators_parallel.two_osci_solved(omega_list, c_list_1, chimax, 1e-16, path)
 t2 = time.time()
 N_averg_1 = sys1.N_averg_evolution(0,1000,1)
 t3 = time.time()
