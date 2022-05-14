@@ -31,12 +31,12 @@ def solve_whole_system_and_save_3(chimin,chimax):
         f2.close()
     return None
 
-def parallel_solve_mixing_matrices_and_save(chimin,chimax):
+def parallel_solve_mixing_matrices_and_save(chimin,chimax,path):
     rank = mpiutil.rank
     size = mpiutil.size
     nbatch = math.floor((chimax - chimin) / size)
-    f1 = h5py.File('eigenvalues.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
-    f2 = h5py.File('eigenvectors.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
+    f1 = h5py.File(path+'eigenvalues.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
+    f2 = h5py.File(path+'eigenvectors.hdf5', 'w', driver='mpio', comm=mpiutil._comm)
     dset_1 = []
     dset_2 = []
     for chi in np.arange(chimin,chimax):
@@ -87,10 +87,10 @@ def solve_whole_system_and_save_1(chimin, chimax):
     eig_vals_list, eig_vecs_list = list(zip(*Result))
     if mpiutil.rank0:
         f1 = h5py.File('eigenvalues.hdf5', 'w')
-        f1.create_dataset(str(chimax), data=eig_vals_list, chunks=True, dtype=float)
+        f1.create_dataset(str(chimax), data=eig_vals_list, dtype=float, compression="gzip", compression_opts=9)
         f1.close()
         f2 = h5py.File('eigenvectors.hdf5', 'w')
-        f2.create_dataset(str(chimax), data=eig_vecs_list , chunks=True, dtype=float)
+        f2.create_dataset(str(chimax), data=eig_vecs_list, dtype=float, compression="gzip", compression_opts=9)
         f2.close()
     return
 
