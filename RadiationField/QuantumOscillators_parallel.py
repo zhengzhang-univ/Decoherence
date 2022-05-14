@@ -1,6 +1,5 @@
 import math
 import numpy as np
-#import matplotlib.pyplot as plt
 import sympy
 from sympy.physics.quantum.constants import hbar
 from sympy.physics.qho_1d import coherent_state
@@ -79,11 +78,11 @@ class two_osci_solved():
             Nmax = self.Nmax(Chi)
             basis = np.exp(self.eig_vals[ind] * tt)
             aux = np.einsum("ij, j, j -> i", self.eig_vecs[ind], self.local_init_cond_lists[ind], basis)
-            N_avrg = sum(np.absolute(aux)**2 * np.arange(Nmax+1))
+            N_avrg = sum(np.absolute(np.exp(self.log_scaling[ind]) *aux) ** 2 * np.arange(Nmax+1))
             return aux, N_avrg
         result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
         coeffs, N_avrg_decomp = list(zip(*result))
-        N_avrg = np.sum(N_avrg_decomp * np.exp(2*self.log_scaling))
+        N_avrg = sum(N_avrg_decomp)
         return coeffs, N_avrg
 
     def turn_list_to_array(self, lists):
