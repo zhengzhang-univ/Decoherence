@@ -16,6 +16,7 @@ class two_osci_solved():
             Lambda * math.sqrt(hb / (2 * m_list[0] * omega_list[0])) * (hb / (2 * m_list[1] * omega_list[1])) / hb) * (
                           -1j)
         self.Chimax = Chimax
+        self.scaling = Chimax ** 2
         self.c_list = np.array(c_list)
         self.datapath = path
         f1 = h5py.File(path + "eigenvalues.hdf5", 'r')
@@ -27,7 +28,7 @@ class two_osci_solved():
                                                for N in range(math.floor(Chi / 2) + 1)]).astype(complex)
 
         self.local_chis = mpiutil.partition_list_mpi(np.arange(Chimax+1), method="alt", comm=mpiutil._comm)
-        self.init_coeff_lists = mpiutil.parallel_map(get_init_coeff_chi, list(np.arange(Chimax + 1)))
+        #self.init_coeff_lists = mpiutil.parallel_map(get_init_coeff_chi, list(np.arange(Chimax + 1)))
 
         def eigen_vals(chi):
             return f1[str(chi)][...]
@@ -53,7 +54,7 @@ class two_osci_solved():
     def solve_initial_conditions(self):
         def get_initial_condition(ind):
             V = np.matrix(self.eig_vecs[ind])
-            g_i = np.einsum("ij,j -> i", np.array(V.H), self.init_coeff_lists[ind])
+            g_i = np.einsum("ij,j -> i", np.array(V.H), self.local_init_coeff_lists[ind])
             return g_i
         #Chi_array = list(np.arange(self.Chimax + 1))
         #self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")
@@ -72,7 +73,7 @@ class two_osci_solved():
             return aux, N_avrg
         result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
         coeffs, N_avrg_decomp = list(zip(*result))
-        return coeffs, sum(N_avrg_decomp)
+        return coeffs, sum(N_avrg_decomp)/(self.scaling**2)
 
     def turn_list_to_array(self, lists):
         result = np.zeros((self.Nmax(self.Chimax) + 1, self.Chimax + 1), dtype=complex)
@@ -115,7 +116,7 @@ class two_osci_solved():
         for t in tlist:
             coeff_list, N_avrg = self.all_coeffs_t(t)
             N_t.append(N_avrg)
-        return  np.array(N_t)
+        return np.array(N_t)
 
 class two_osci_continue():
     def __init__(self, omega_list, c_list, Chimax, Lambda, path, local_eig_vecs, local_eig_vals):
@@ -139,7 +140,7 @@ class two_osci_continue():
                                                for N in range(math.floor(Chi / 2) + 1)]).astype(complex)
 
         self.local_chis = mpiutil.partition_list_mpi(np.arange(Chimax+1), method="alt", comm=mpiutil._comm)
-        self.init_coeff_lists = mpiutil.parallel_map(get_init_coeff_chi, list(np.arange(Chimax + 1)))
+        #self.init_coeff_lists = mpiutil.parallel_map(get_init_coeff_chi, list(np.arange(Chimax + 1)))
 
         self.local_init_coeff_lists = [get_init_coeff_chi(chi) for chi in self.local_chis]
 
@@ -155,7 +156,7 @@ class two_osci_continue():
     def solve_initial_conditions(self):
         def get_initial_condition(ind):
             V = np.matrix(self.eig_vecs[ind])
-            g_i = np.einsum("ij,j -> i", np.array(V.H), self.init_coeff_lists[ind])
+            g_i = np.einsum("ij,j -> i", np.array(V.H), self.local_init_coeff_lists[ind])
             return g_i
         #Chi_array = list(np.arange(self.Chimax + 1))
         #self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")

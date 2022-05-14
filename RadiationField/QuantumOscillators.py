@@ -46,7 +46,6 @@ class two_osci_solved():
         f1.close()
         f2.close()
 
-
     def get_init_coeff(self, N, n):
         return coherent_state(N,self.c_list[0])*coherent_state(n,self.c_list[1])
 

@@ -5,7 +5,7 @@ import time
 st = time.time()
 
 omega_list = list(np.array([2e6, 1e6],dtype=int))
-c_list_1 = [35,35]
+c_list_1 = [20,20]
 c_list_2 = [15,np.sqrt(3675 - 2*15**2)]
 c_list_3 = [5,np.sqrt(3675 - 2*5**2)]
 c_list_4 = [0.5*np.sqrt(3675 - 5**2), 5]
