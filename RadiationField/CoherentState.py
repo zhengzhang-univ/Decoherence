@@ -5,23 +5,34 @@ import scipy.special
 from sympy.physics.qho_1d import psi_n, coherent_state
 from sympy.physics.quantum.constants import hbar
 import matplotlib.pyplot as plt
-from matplotlib import cm
 init_printing()
 
+def log_coeff_list(c, ns: list):
+    a = len(list(ns))
+    coeffarray = np.zeros(a, dtype=complex)
+    aux1 = -0.5 * np.abs(c) ** 2
+    aux2 = np.log(c)
+    for i in range(a):
+        coeffarray[i] = aux1 + ns[i] * aux2 - 0.5 * np.sum(np.log(np.arange(1, ns[i]+1)))
+    return coeffarray
+
+def log_coeff(c: complex, n: int):
+    result = -0.5*np.abs(c)**2 + n*np.log(c) - 0.5*np.sum(np.log(np.arange(1, n+1)))
+    return result
+
+def largest_log_coeff(c: complex):
+    n=np.floor(np.abs(c)**2)
+    return log_coeff(c,n)
 
 x, xa, xb, t = symbols("x x_a x_b t", real = True)
 alpha = symbols("alpha", complex = True)
 n = symbols("n", integer = True)
 m, omega = symbols("m omega", positive=True)
 
-def coher_coeff_symb(c, n)
+def coher_coeff_symbol(c, n):
     return coherent_state(n,c)
 
-def coher_osci_coeff(c, n):
-    """
-    c: Complex object. The coherent state parameter.
-    n: Integer object. the index/indices of the Fock state(s). Could be a single interger or an interger array.
-    """
+def coher_coeff_numerical(c, n):
     result = np.exp(-0.5 * np.abs(c) ** 2) * c ** n / np.sqrt(scipy.special.factorial(n))
     return result
 
@@ -59,12 +70,9 @@ def coherent_state_time_evolving(alpha):
 def visualize_coherent_state_time_train_2d(alpha):
     eigenfuncs, coeffs, coherent_state = coherent_state_time_evolving(alpha)
     m,t,x,omega = symbols("m t x omega")
-    #coherent_state_x_t = N(coherent_state.subs([(m,2*hbar*omega)]))
     coherent_state_x_t = N(coherent_state.subs([(m,2*hbar*omega),(omega,10**6)]))
     f = lambdify([x,t], coherent_state_x_t)
-    # time resolution ~ say pi/(5*omega) ~ 10^(-6)
     time_train = np.arange(15)*0.000001
-    #x_train = (np.arange(20000)-10000)*0.000000001
     x_train = np.arange(-0.000005,0.000005,0.000000001)
     result = []
     for i in np.arange(len(time_train)):

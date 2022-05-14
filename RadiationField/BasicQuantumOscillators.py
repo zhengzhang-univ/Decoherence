@@ -9,7 +9,7 @@ import scipy.special
 from . import mpiutil
 from . import CoherentState
 import h5py
-coher_osci_coeff = CoherentState.coher_osci_coeff
+coher_osci_coeff = CoherentState.coher_coeff_numerical
 
 class two_osci_basic():
     def __init__(self, omega_list, c_list, Chimax, Lambda):

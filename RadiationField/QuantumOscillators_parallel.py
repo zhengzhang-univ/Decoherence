@@ -6,27 +6,23 @@ from sympy.physics.quantum.constants import hbar
 from sympy.physics.qho_1d import coherent_state
 from . import mpiutil
 import h5py
-import time
+from RadiationField.CoherentState import log_coeff
 
 class two_osci_solved():
     def __init__(self, omega_list, c_list, Chimax, Lambda, path):
-        self.transfer_matrices = None
         hb = sympy.N(hbar)
         m_list = [hb * omega for omega in omega_list]
         self.factor = float(
-            Lambda * math.sqrt(hb / (2 * m_list[0] * omega_list[0])) * (hb / (2 * m_list[1] * omega_list[1])) / hb) * (
+                            Lambda * math.sqrt(hb / (2 * m_list[0] * omega_list[0])) * (hb / (2 * m_list[1] * omega_list[1])) / hb) * (
                           -1j)
         self.Chimax = Chimax
-        self.scaling = Chimax ** 2
+        #self.scaling = Chimax ** 2
         self.c_list = np.array(c_list)
         self.datapath = path
         f1 = h5py.File(path + "eigenvalues.hdf5", 'r')
         f2 = h5py.File(path + "eigenvectors.hdf5", 'r')
         self.indices_lists = [[(N, Chi - 2 * N) for N in range(math.floor(Chi / 2) + 1)]
                                for Chi in range(Chimax + 1)]
-        def get_init_coeff_chi(Chi):
-            return np.array([sympy.N(Chimax**2 * self.get_init_coeff_2(N, Chi - 2 * N))
-                                               for N in range(math.floor(Chi / 2) + 1)]).astype(complex)
 
         self.local_chis = mpiutil.partition_list_mpi(np.arange(Chimax+1), method="alt", comm=mpiutil._comm)
         #self.init_coeff_lists = mpiutil.parallel_map(get_init_coeff_chi, list(np.arange(Chimax + 1)))
@@ -39,18 +35,27 @@ class two_osci_solved():
 
         self.eig_vals = [eigen_vals(chi) for chi in self.local_chis]
         self.eig_vecs = [eigen_vecs(chi) for chi in self.local_chis]
-        self.local_init_coeff_lists = [get_init_coeff_chi(chi) for chi in self.local_chis]
-
         f1.close()
         f2.close()
-        mpiutil.barrier()
+        Result = [self.get_init_log_coeff_chi(chi) for chi in self.local_chis]
+        self.local_scaled_init_log_coeff_lists, log_scaling = list(zip(*Result))
+        self.log_scaling = np.array(log_scaling)
+        #mpiutil.barrier()
+
         self.solve_initial_conditions()
 
-    def get_init_coeff(self, N, n):
-        return coherent_state(N,self.c_list[0])*coherent_state(n,self.c_list[1])
+    def get_init_log_coeff(self, N, n):
+        return log_coeff(self.c_list[0],N) + log_coeff(self.c_list[1],n)
 
-    def get_init_coeff_2(self, N, n):
-        return sympy.N(coherent_state(N,self.c_list[0])) * sympy.N(coherent_state(n,self.c_list[1]))
+    def get_init_log_coeff_chi(self,Chi):
+        result = np.array([self.get_init_log_coeff(N, Chi - 2 * N)
+                         for N in range(math.floor(Chi / 2) + 1)])
+        aux = result.real
+        scaling = 0.5*(np.max(aux)+np.min(aux))
+        return result-scaling, scaling
+
+    #def get_init_coeff_2(self, N, n):
+        #return sympy.N(coherent_state(N,self.c_list[0])) * sympy.N(coherent_state(n,self.c_list[1]))
 
     def Nmax(self,Chi):
         return math.floor(Chi / 2)
@@ -58,12 +63,13 @@ class two_osci_solved():
     def solve_initial_conditions(self):
         def get_initial_condition(ind):
             V = np.matrix(self.eig_vecs[ind])
-            g_i = np.einsum("ij,j -> i", np.array(V.H), self.local_init_coeff_lists[ind])
+            g_i = np.einsum("ij,j -> i", np.array(V.H), np.exp(self.local_scaled_init_log_coeff_lists[ind]))
             return g_i
         #Chi_array = list(np.arange(self.Chimax + 1))
         #self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")
         self.local_init_cond_lists = [get_initial_condition(ind) for ind in range(len(self.local_chis))]
-        print('The system has been initialized!')
+        if mpiutil.rank0:
+            print('The system has been initialized!')
 
     def all_coeffs_t(self, t):
         tt = self.factor * t
@@ -77,7 +83,8 @@ class two_osci_solved():
             return aux, N_avrg
         result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
         coeffs, N_avrg_decomp = list(zip(*result))
-        return coeffs, sum(N_avrg_decomp)/(self.scaling**2)
+        N_avrg = np.sum(N_avrg_decomp * np.exp(2*self.log_scaling))
+        return coeffs, N_avrg
 
     def turn_list_to_array(self, lists):
         result = np.zeros((self.Nmax(self.Chimax) + 1, self.Chimax + 1), dtype=complex)
@@ -126,7 +133,6 @@ class two_osci_continue():
     def __init__(self, omega_list, c_list, Chimax, Lambda, path, local_eig_vecs, local_eig_vals):
         self.eig_vals = local_eig_vals
         self.eig_vecs = local_eig_vecs
-        self.transfer_matrices = None
         hb = sympy.N(hbar)
         m_list = [hb * omega for omega in omega_list]
         self.factor = float(
