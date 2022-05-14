@@ -1,7 +1,7 @@
 from sympy import *
 import numpy as np
 import math as M
-import scipy.special
+#import scipy.special
 from sympy.physics.qho_1d import psi_n, coherent_state
 from sympy.physics.quantum.constants import hbar
 import matplotlib.pyplot as plt
