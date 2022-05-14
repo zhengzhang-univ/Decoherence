@@ -11,7 +11,7 @@ c_list_4 = [0.5*np.sqrt(3675 - 5**2), 5]
 
 
 def heavist_chi(c_list):
-    return int(2*np.absolute(c_list[0])**2 + np.absolute(c_list[1])**2)
+    return 2*int(np.absolute(c_list[0])**2 + np.absolute(c_list[1])**2)
 enrg =  heavist_chi(c_list_1)
 path = "/data/zzhang/"
 #path = "/Users/zheng/Dropbox/project with Nick/"
