@@ -6,6 +6,7 @@ from sympy.physics.quantum.constants import hbar
 from sympy.physics.qho_1d import coherent_state
 from . import mpiutil
 import h5py
+import time
 
 class two_osci_solved():
     def __init__(self, omega_list, c_list, Chimax, Lambda, path):
@@ -24,7 +25,7 @@ class two_osci_solved():
         self.indices_lists = [[(N, Chi - 2 * N) for N in range(math.floor(Chi / 2) + 1)]
                                for Chi in range(Chimax + 1)]
         def get_init_coeff_chi(Chi):
-            return np.array([sympy.N(Chimax**2 * self.get_init_coeff(N, Chi - 2 * N))
+            return np.array([sympy.N(Chimax**2 * self.get_init_coeff_2(N, Chi - 2 * N))
                                                for N in range(math.floor(Chi / 2) + 1)]).astype(complex)
 
         self.local_chis = mpiutil.partition_list_mpi(np.arange(Chimax+1), method="alt", comm=mpiutil._comm)
@@ -47,6 +48,9 @@ class two_osci_solved():
 
     def get_init_coeff(self, N, n):
         return coherent_state(N,self.c_list[0])*coherent_state(n,self.c_list[1])
+
+    def get_init_coeff_2(self, N, n):
+        return sympy.N(coherent_state(N,self.c_list[0])) * sympy.N(coherent_state(n,self.c_list[1]))
 
     def Nmax(self,Chi):
         return math.floor(Chi / 2)
@@ -148,7 +152,7 @@ class two_osci_continue():
         self.solve_initial_conditions()
 
     def get_init_coeff(self, N, n):
-        return coherent_state(N,self.c_list[0])*coherent_state(n,self.c_list[1])
+        return sympy.N(coherent_state(N,self.c_list[0]))*sympy.N(coherent_state(n,self.c_list[1]))
 
     def Nmax(self,Chi):
         return math.floor(Chi / 2)
