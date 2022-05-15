@@ -33,11 +33,12 @@ class two_osci_solved():
 
         self.eig_vals = [eigen_vals(chi) for chi in self.local_chis]
         self.eig_vecs = [eigen_vecs(chi) for chi in self.local_chis]
+        mpiutil.barrier()
         f1.close()
         f2.close()
         self.local_scaled_init_log_coeff_lists = [self.get_init_log_coeff_chi(chi) for chi in self.local_chis]
         #self.log_scaling = np.array(log_scaling)
-        #mpiutil.barrier()
+        mpiutil.barrier()
         self.solve_initial_conditions()
 
     def get_init_log_coeff(self, N, n):
