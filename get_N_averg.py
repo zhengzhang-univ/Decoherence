@@ -27,13 +27,13 @@ c_list_4 = get_c_list(chimax, 5)
 
 path = "/data/zzhang/"
 #path = "/Users/zheng/Dropbox/project with Nick/"
-st, et, dt = 0, 2000, 1
+st, et, dt = 0, 100, 1
 
 t1 = time.time()
 sys = QuantumOscillators_parallel.two_osci_solved(omega_list, c_list_1, chimax, 1e-16, path)
 N_averg_1 = sys.N_averg_evolution(st, et, dt)
 t2 = time.time()
-
+"""
 sys = QuantumOscillators_parallel.two_osci_solved(omega_list, c_list_2, chimax, 1e-16, path)
 N_averg_2 = sys.N_averg_evolution(st, et, dt)
 
@@ -53,3 +53,4 @@ if mpiutil.rank0:
         f.create_dataset("N_sys2", data=N_averg_2)
         f.create_dataset("N_sys3", data=N_averg_3)
         f.create_dataset("N_sys4", data=N_averg_4)
+"""

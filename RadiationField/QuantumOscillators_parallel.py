@@ -2,7 +2,6 @@ import math
 import numpy as np
 import sympy
 from sympy.physics.quantum.constants import hbar
-from sympy.physics.qho_1d import coherent_state
 from . import mpiutil
 import h5py
 from RadiationField.CoherentState import log_coeff
@@ -15,7 +14,7 @@ class two_osci_solved():
                             Lambda * math.sqrt(hb / (2 * m_list[0] * omega_list[0])) * (hb / (2 * m_list[1] * omega_list[1])) / hb) * (
                           -1j)
         self.Chimax = Chimax
-        #self.scaling = Chimax ** 2
+        self.log_scaling = 300
         self.c_list = np.array(c_list)
         self.datapath = path
         f1 = h5py.File(path + "eigenvalues.hdf5", 'r')
@@ -36,25 +35,18 @@ class two_osci_solved():
         self.eig_vecs = [eigen_vecs(chi) for chi in self.local_chis]
         f1.close()
         f2.close()
-        Result = [self.get_init_log_coeff_chi(chi) for chi in self.local_chis]
-        self.local_scaled_init_log_coeff_lists, log_scaling = list(zip(*Result))
-        self.log_scaling = np.array(log_scaling)
+        self.local_scaled_init_log_coeff_lists = [self.get_init_log_coeff_chi(chi) for chi in self.local_chis]
+        #self.log_scaling = np.array(log_scaling)
         #mpiutil.barrier()
-
         self.solve_initial_conditions()
 
     def get_init_log_coeff(self, N, n):
-        return log_coeff(self.c_list[0],N) + log_coeff(self.c_list[1],n)
+        return log_coeff(self.c_list[0],N) + log_coeff(self.c_list[1],n) + self.log_scaling
 
     def get_init_log_coeff_chi(self,Chi):
         result = np.array([self.get_init_log_coeff(N, Chi - 2 * N)
-                         for N in range(math.floor(Chi / 2) + 1)])
-        aux = result.real
-        scaling = 0.5*(np.max(aux)+np.min(aux))
-        return result-scaling, scaling
-
-    #def get_init_coeff_2(self, N, n):
-        #return sympy.N(coherent_state(N,self.c_list[0])) * sympy.N(coherent_state(n,self.c_list[1]))
+                           for N in range(self.Nmax(Chi) + 1)])
+        return result
 
     def Nmax(self,Chi):
         return math.floor(Chi / 2)
@@ -63,10 +55,14 @@ class two_osci_solved():
         def get_initial_condition(ind):
             V = np.matrix(self.eig_vecs[ind])
             g_i = np.einsum("ij,j -> i", np.array(V.H), np.exp(self.local_scaled_init_log_coeff_lists[ind]))
-            return g_i
+            flag = 1
+            if np.sum(g_i) == 0:
+                flag = 0
+            return g_i, flag
         #Chi_array = list(np.arange(self.Chimax + 1))
         #self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")
-        self.local_init_cond_lists = [get_initial_condition(ind) for ind in range(len(self.local_chis))]
+        Result = [get_initial_condition(ind) for ind in range(len(self.local_chis))]
+        self.local_init_cond_lists, self.flags = list(zip(*Result))
         if mpiutil.rank0:
             print('The system has been initialized!')
 
@@ -75,11 +71,15 @@ class two_osci_solved():
         Chi_array = list(np.arange(self.Chimax + 1))
         def linear_solver(Chi):
             ind = math.floor(Chi / mpiutil.size)
-            Nmax = self.Nmax(Chi)
-            basis = np.exp(self.eig_vals[ind] * tt)
-            aux = np.einsum("ij, j, j -> i", self.eig_vecs[ind], self.local_init_cond_lists[ind], basis)
-            N_avrg = sum(np.absolute(np.exp(self.log_scaling[ind]) *aux) ** 2 * np.arange(Nmax+1))
-            return aux, N_avrg
+            if self.flags[ind] == 0:
+                aux = np.zeros(self.Nmax(Chi),dtype=complex)
+                return aux, 0
+            else:
+                Nmax = self.Nmax(Chi)
+                basis = np.exp(self.eig_vals[ind] * tt)
+                aux = np.einsum("ij, j, j -> i", self.eig_vecs[ind], self.local_init_cond_lists[ind], basis)
+                N_avrg = np.exp(-2*self.log_scaling) * sum(np.absolute(aux) ** 2 * np.arange(Nmax+1))
+                return aux, N_avrg
         result = mpiutil.parallel_map(linear_solver, Chi_array, method="alt")
         coeffs, N_avrg_decomp = list(zip(*result))
         N_avrg = sum(N_avrg_decomp)

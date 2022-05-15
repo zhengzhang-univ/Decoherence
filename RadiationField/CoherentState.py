@@ -4,7 +4,7 @@ import math as M
 from sympy.physics.qho_1d import psi_n, coherent_state
 init_printing()
 
-def log_coeff_list(c, ns: list):
+def log_coeff_list(c, ns):
     a = len(list(ns))
     coeffarray = np.zeros(a, dtype=complex)
     aux1 = -0.5 * np.abs(c) ** 2
@@ -12,6 +12,10 @@ def log_coeff_list(c, ns: list):
     for i in range(a):
         coeffarray[i] = aux1 + ns[i] * aux2 - 0.5 * np.sum(np.log(np.arange(1, ns[i]+1)))
     return coeffarray
+
+def broadcast_and_sum(array1,array2):
+    Aux1, Aux2 = np.broadcast_arrays(array1[:, np.newaxis], array2)
+    return Aux1 + Aux2
 
 def log_coeff(c: complex, n: int):
     result = -0.5*np.abs(c)**2 + n*np.log(c) - 0.5*np.sum(np.log(np.arange(1, n+1)))
