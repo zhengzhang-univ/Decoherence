@@ -34,8 +34,10 @@ sys = QuantumOscillators_parallel.two_osci_solved(omega_list, c_list_1, chimax, 
 mpiutil.barrier()
 N_averg_1 = sys.N_averg_evolution(st, et, dt)
 t2 = time.time()
-"""
+
 mpiutil.barrier()
+
+"""
 sys = QuantumOscillators_parallel.two_osci_solved(omega_list, c_list_2, chimax, 1e-16, path)
 mpiutil.barrier()
 N_averg_2 = sys.N_averg_evolution(st, et, dt)
