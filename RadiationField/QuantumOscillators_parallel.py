@@ -10,11 +10,11 @@ class two_osci_solved():
     def __init__(self, omega_list, c_list, Chimax, Lambda, path):
         hb = sympy.N(hbar)
         m_list = [hb * omega for omega in omega_list]
-        self.factor = float(
-                            Lambda * math.sqrt(hb / (2 * m_list[0] * omega_list[0])) * (hb / (2 * m_list[1] * omega_list[1])) / hb) * (
-                          -1j)
+        self.factor = float(Lambda * math.sqrt(hb / (2 * m_list[0] * omega_list[0])) *
+                            (hb / (2 * m_list[1] * omega_list[1])) / hb
+                            ) * (-1j)
         self.Chimax = Chimax
-        self.log_scaling = 300
+        self.log_scaling = 0
         self.c_list = np.array(c_list)
         self.datapath = path
         f1 = h5py.File(path + "eigenvalues.hdf5", 'r')
