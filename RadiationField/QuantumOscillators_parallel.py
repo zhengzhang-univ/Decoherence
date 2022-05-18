@@ -23,7 +23,7 @@ class two_osci_solved():
                                for Chi in range(Chimax + 1)]
 
         self.local_chis = mpiutil.partition_list_mpi(np.arange(Chimax+1), method="alt", comm=mpiutil._comm)
-        #self.init_coeff_lists = mpiutil.parallel_map(get_init_coeff_chi, list(np.arange(Chimax + 1)))
+        # self.init_coeff_lists = mpiutil.parallel_map(get_init_coeff_chi, list(np.arange(Chimax + 1)))
 
         def eigen_vals(chi):
             return f1[str(chi)][...]
@@ -37,7 +37,6 @@ class two_osci_solved():
         f1.close()
         f2.close()
         self.local_scaled_init_log_coeff_lists = [self.get_init_log_coeff_chi(chi) for chi in self.local_chis]
-        #self.log_scaling = np.array(log_scaling)
         mpiutil.barrier()
         self.solve_initial_conditions()
 
@@ -60,8 +59,8 @@ class two_osci_solved():
             if np.sum(g_i) == 0:
                 flag = 0
             return g_i, flag
-        #Chi_array = list(np.arange(self.Chimax + 1))
-        #self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")
+        # Chi_array = list(np.arange(self.Chimax + 1))
+        # self.init_cond_lists = mpiutil.parallel_map(get_initial_condition, Chi_array, method="alt")
         Result = [get_initial_condition(ind) for ind in range(len(self.local_chis))]
         self.local_init_cond_lists, self.flags = list(zip(*Result))
         if mpiutil.rank0:
